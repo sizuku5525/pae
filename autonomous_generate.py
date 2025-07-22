@@ -7,13 +7,13 @@ import json
 import logging
 from datetime import datetime
 from modules.site_manager import SiteManager
-from modules.generator import ArticleGenerator
 from modules.wordpress_publisher import WordPressPublisher
 from modules.category_selector import CategorySelector
 from modules.unsplash_fetcher import UnsplashFetcher
-from modules.content_strategist import ContentStrategist
 from modules.autonomous_publisher import AutonomousPublisher
-import anthropic
+from modules.article_generator_gpt import ArticleGeneratorGPT
+from modules.content_strategist_gpt import ContentStrategistGPT
+import openai
 
 # ロギング設定
 logging.basicConfig(
@@ -101,7 +101,7 @@ def manual_input():
 
 def main():
     """メイン処理"""
-    print("🤖 AI自律記事生成システム")
+    print("🤖 AI自律記事生成システム (GPT-4.1)")
     print("="*80)
     
     # マネージャー初期化
@@ -126,23 +126,23 @@ def main():
     
     print(f"\n選択されたサイト: {site.name}")
     
-    # Claude API初期化
+    # OpenAI API初期化
     try:
         with open('config/api_keys.json', 'r') as f:
             api_keys = json.load(f)
-        claude_api_key = api_keys.get('claude', {}).get('api_key')
+        gpt_api_key = api_keys.get('openai', {}).get('api_key')
         
-        if not claude_api_key:
-            print("❌ Claude APIキーが設定されていません")
+        if not gpt_api_key:
+            print("❌ OpenAI APIキーが設定されていません")
             return
             
-        claude_client = anthropic.Anthropic(api_key=claude_api_key)
+        openai.api_key = gpt_api_key
     except Exception as e:
         print(f"❌ API初期化エラー: {str(e)}")
         return
     
-    # コンテンツストラテジスト初期化
-    strategist = ContentStrategist(claude_client)
+    # コンテンツストラテジスト初期化    
+    strategist = ContentStrategistGPT()
     
     # 過去記事分析
     print("\n📊 過去記事を分析中...")
@@ -204,7 +204,7 @@ def main():
             # 記事生成
             print("\n✍️ 記事を生成中...")
             
-            generator = ArticleGenerator()
+            generator = ArticleGeneratorGPT()
             
             # site_infoに戦略情報を追加
             site_info = site.to_dict()
