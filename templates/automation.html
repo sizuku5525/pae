@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-robot"></i> 自動化設定
+            </h1>
+            <p class="text-muted">完全自動記事生成システムの設定と管理</p>
+            <div id="current-settings" class="alert alert-info mt-3" style="display: none;">
+                <strong>現在の設定:</strong>
+                <span id="current-settings-text"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ステータスカード -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">システムステータス</h5>
+                    <div id="automation-status" class="mb-3">
+                        <span class="badge bg-secondary">確認中...</span>
+                    </div>
+                    <button class="btn btn-success btn-sm" onclick="startAutomation()">
+                        <i class="bi bi-play-fill"></i> 開始
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="stopAutomation()">
+                        <i class="bi bi-stop-fill"></i> 停止
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">本日の実績</h5>
+                    <h2 class="text-primary"><span id="today-count">0</span> / <span id="max-articles">10</span></h2>
+                    <small class="text-muted">生成記事数</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">次回実行</h5>
+                    <h2 class="text-info" id="next-run">--:--</h2>
+                    <small class="text-muted">予定時刻</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定フォーム -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-gear-fill"></i> 自動化設定</h5>
+        </div>
+        <div class="card-body">
+            <form id="automation-settings-form">
+                <div class="row">
+                    <!-- 基本設定 -->
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 mb-3">基本設定</h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">記事の文字数</label>
+                            <select class="form-select" id="article-length" name="article_length">
+                                <option value="3000">3,000文字</option>
+                                <option value="5000">5,000文字</option>
+                                <option value="7000">7,000文字</option>
+                                <option value="10000">10,000文字</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">1日の最大記事数</label>
+                            <input type="number" class="form-control" id="max-articles-per-day" 
+                                   name="max_articles_per_day" min="1" max="50">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">投稿間隔（分）</label>
+                            <input type="number" class="form-control" id="min-interval" 
+                                   name="min_interval_minutes" min="30" max="1440">
+                            <small class="form-text text-muted">最小30分、最大24時間（1440分）</small>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="auto-publish" 
+                                   name="auto_publish" checked>
+                            <label class="form-check-label" for="auto-publish">
+                                記事を自動公開する
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                オフの場合は下書きとして保存されます
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- スケジュール設定 -->
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 mb-3">スケジュール設定</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">開始時刻</label>
+                                <input type="number" class="form-control" id="start-hour" 
+                                       name="start_hour" min="0" max="23" value="6">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">終了時刻</label>
+                                <input type="number" class="form-control" id="end-hour" 
+                                       name="end_hour" min="0" max="23" value="23">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 安全設定 -->
+                <h6 class="border-bottom pb-2 mb-3 mt-4">安全設定</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">エラー上限</label>
+                            <input type="number" class="form-control" id="max-errors" 
+                                   name="max_errors_before_stop" min="1" max="10" value="3">
+                            <small class="form-text text-muted">この回数エラーが発生したら停止</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">最低品質スコア</label>
+                            <input type="number" class="form-control" id="min-quality" 
+                                   name="min_quality_score" min="0" max="1" step="0.1" value="0.7">
+                            <small class="form-text text-muted">0.0〜1.0の範囲</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3 form-check mt-4">
+                            <input type="checkbox" class="form-check-input" id="duplicate-check" 
+                                   name="duplicate_check" checked>
+                            <label class="form-check-label" for="duplicate-check">
+                                重複チェックを有効化
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> 設定を保存
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="loadSettings()">
+                        <i class="bi bi-arrow-clockwise"></i> リセット
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// 設定の読み込み
+function loadSettings() {
+    fetch('/api/automation/settings')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.settings) {
+                const settings = data.settings;
+                
+                // nullチェックとデフォルト値の設定
+                const articleLength = settings.article_length || 7000;
+                const global = settings.global || {};
+                const operationHours = global.operation_hours || { start: 6, end: 23 };
+                const smartScheduling = global.smart_scheduling || { enabled: true, peak_hours: [10, 15, 20] };
+                const safety = global.safety || { max_errors_before_stop: 3, min_quality_score: 0.7, duplicate_check: true };
+                
+                // 基本設定
+                document.getElementById('article-length').value = articleLength;
+                document.getElementById('max-articles-per-day').value = global.max_articles_per_day || 10;
+                document.getElementById('min-interval').value = global.min_interval_minutes || 120;
+                document.getElementById('auto-publish').checked = global.auto_publish !== false;
+                
+                // スケジュール設定
+                document.getElementById('start-hour').value = operationHours.start;
+                document.getElementById('end-hour').value = operationHours.end;
+                
+                // 安全設定
+                document.getElementById('max-errors').value = safety.max_errors_before_stop;
+                document.getElementById('min-quality').value = safety.min_quality_score;
+                document.getElementById('duplicate-check').checked = safety.duplicate_check !== false;
+                
+                // 最大記事数を統計表示にも反映
+                document.getElementById('max-articles').textContent = global.max_articles_per_day || 10;
+                
+                // 現在の設定を表示
+                const currentText = `
+                    文字数: ${articleLength.toLocaleString()}文字 | 
+                    最大記事数: ${global.max_articles_per_day || 10}件/日 | 
+                    投稿間隔: ${global.min_interval_minutes || 120}分
+                `;
+                document.getElementById('current-settings-text').textContent = currentText;
+                document.getElementById('current-settings').style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('設定読み込みエラー:', error);
+            showAlert('danger', '設定の読み込みに失敗しました: ' + error.message);
+        });
+}
+
+// 設定の保存
+document.getElementById('automation-settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        article_length: parseInt(document.getElementById('article-length').value),
+        global: {
+            max_articles_per_day: parseInt(document.getElementById('max-articles-per-day').value),
+            min_interval_minutes: parseInt(document.getElementById('min-interval').value),
+            auto_publish: document.getElementById('auto-publish').checked,
+            operation_hours: {
+                start: parseInt(document.getElementById('start-hour').value),
+                end: parseInt(document.getElementById('end-hour').value)
+            },
+            safety: {
+                max_errors_before_stop: parseInt(document.getElementById('max-errors').value),
+                min_quality_score: parseFloat(document.getElementById('min-quality').value),
+                duplicate_check: document.getElementById('duplicate-check').checked
+            }
+        }
+    };
+    
+    fetch('/api/automation/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 保存した値を含めたメッセージを表示
+            const savedValues = `
+                文字数: ${formData.article_length.toLocaleString()}文字<br>
+                最大記事数: ${formData.global.max_articles_per_day}件/日<br>
+                投稿間隔: ${formData.global.min_interval_minutes}分
+            `;
+            showAlert('success', '設定を保存しました<br>' + savedValues);
+            // 設定を再読み込みして表示を更新
+            setTimeout(() => {
+                loadSettings();
+                checkStatus();
+            }, 500);
+        } else {
+            showAlert('danger', 'エラー: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('保存エラー:', error);
+        showAlert('danger', '設定の保存に失敗しました');
+    });
+});
+
+// ステータス確認
+function checkStatus() {
+    fetch('/api/automation/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusEl = document.getElementById('automation-status');
+            if (data.running) {
+                statusEl.innerHTML = '<span class="badge bg-success">稼働中</span>';
+                document.getElementById('next-run').textContent = data.next_run || '--:--';
+            } else {
+                statusEl.innerHTML = '<span class="badge bg-danger">停止中</span>';
+                document.getElementById('next-run').textContent = '--:--';
+            }
+            
+            document.getElementById('today-count').textContent = data.today_count || 0;
+            document.getElementById('max-articles').textContent = data.max_articles || 10;
+        })
+        .catch(error => {
+            console.error('ステータス確認エラー:', error);
+        });
+}
+
+// 自動化開始
+function startAutomation() {
+    if (confirm('自動化を開始しますか？')) {
+        fetch('/api/automation/start', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', '自動化を開始しました');
+                    checkStatus();
+                } else {
+                    showAlert('danger', 'エラー: ' + data.message);
+                }
+            });
+    }
+}
+
+// 自動化停止
+function stopAutomation() {
+    if (confirm('自動化を停止しますか？')) {
+        fetch('/api/automation/stop', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', '自動化を停止しました');
+                    checkStatus();
+                } else {
+                    showAlert('danger', 'エラー: ' + data.message);
+                }
+            });
+    }
+}
+
+
+
+// アラート表示
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Bootstrapのアラートを初期化
+    const bsAlert = new bootstrap.Alert(alertDiv);
+    
+    // 5秒後に自動的に閉じる
+    setTimeout(() => {
+        bsAlert.close();
+    }, 5000);
+}
+
+// 初期化
+document.addEventListener('DOMContentLoaded', function() {
+    loadSettings();
+    checkStatus();
+    
+    // 定期更新
+    setInterval(checkStatus, 30000); // 30秒ごと
+});
+</script>
+{% endblock %}

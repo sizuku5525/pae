@@ -1,0 +1,34 @@
+{
+  "enabled": true,
+  "sites": {},
+  "article_length": 3000,
+  "global": {
+    "max_articles_per_day": 10,
+    "min_interval_minutes": 33,
+    "operation_hours": {
+      "start": 1,
+      "end": 23
+    },
+    "auto_publish": true,
+    "require_approval": false,
+    "smart_scheduling": {
+      "enabled": true,
+      "peak_hours": [
+        10,
+        15,
+        20
+      ],
+      "avoid_weekends": false
+    },
+    "content_strategy": {
+      "diversity_check": true,
+      "trend_following": true,
+      "seasonal_adjustment": false
+    },
+    "safety": {
+      "max_errors_before_stop": 3,
+      "duplicate_check": true,
+      "min_quality_score": 0.7
+    }
+  }
+}

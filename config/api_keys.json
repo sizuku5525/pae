@@ -1,0 +1,12 @@
+{
+  "claude": {
+    "api_key": "",
+    "model": "claude-sonnet-4-20250514"
+  },
+  "venice": {
+    "api_key": ""
+  },
+  "unsplash": {
+    "access_key": ""
+  }
+}

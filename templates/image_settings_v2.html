@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-key"></i> 画像生成API設定
+            </h1>
+            <p class="text-muted">画像生成サービスのAPIキー管理</p>
+        </div>
+    </div>
+
+    <!-- メッセージ表示エリア -->
+    <div id="message-area"></div>
+
+    <!-- APIキー設定 -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-key"></i> APIキー設定</h5>
+        </div>
+        <div class="card-body">
+            <!-- 現在の設定状態 -->
+            <div class="alert alert-info mb-4">
+                <h6>現在の設定状態</h6>
+                <ul class="mb-0">
+                    <li>Gemini: <span id="gemini-current">確認中...</span></li>
+                    <li>OpenAI: <span id="openai-current">確認中...</span></li>
+                    <li>Unsplash: <span id="unsplash-current">確認中...</span></li>
+                </ul>
+            </div>
+
+            <!-- API設定フォーム -->
+            <form id="api-form" onsubmit="return false;">
+                <!-- Gemini -->
+                <div class="mb-4 p-3 border rounded">
+                    <h6><img src="https://www.gstatic.com/lamda/images/gemini_favicon_f069958c85030456e93de685481c559f160ea06b.png" width="20" class="me-2">Google Gemini 2.0</h6>
+                    <div id="gemini-status" class="mb-2"></div>
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               id="gemini-key-input-unique-2025" 
+                               placeholder="AIzaSy..." 
+                               autocomplete="off"
+                               data-lpignore="true"
+                               style="display:none;">
+                        <input type="password" 
+                               class="form-control" 
+                               id="gemini-key" 
+                               placeholder="AIzaSy..." 
+                               autocomplete="new-password"
+                               readonly
+                               onfocus="this.removeAttribute('readonly');this.value='';">
+                        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('gemini-key')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="saveKey('gemini')">保存</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteKey('gemini')">削除</button>
+                    </div>
+                </div>
+
+                <!-- OpenAI -->
+                <div class="mb-4 p-3 border rounded">
+                    <h6><img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" width="20" class="me-2">OpenAI GPT Image</h6>
+                    <div id="openai-status" class="mb-2"></div>
+                    <div class="input-group">
+                        <input type="password" 
+                               class="form-control" 
+                               id="openai-key" 
+                               placeholder="sk-..." 
+                               autocomplete="new-password"
+                               readonly
+                               onfocus="this.removeAttribute('readonly');this.value='';">
+                        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('openai-key')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="saveKey('openai')">保存</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteKey('openai')">削除</button>
+                    </div>
+                </div>
+
+                <!-- Unsplash -->
+                <div class="mb-4 p-3 border rounded">
+                    <h6><i class="bi bi-camera-fill"></i> Unsplash</h6>
+                    <div id="unsplash-status" class="mb-2"></div>
+                    <div class="input-group">
+                        <input type="password" 
+                               class="form-control" 
+                               id="unsplash-key" 
+                               placeholder="アクセスキー" 
+                               autocomplete="new-password"
+                               readonly
+                               onfocus="this.removeAttribute('readonly');this.value='';">
+                        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('unsplash-key')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="saveKey('unsplash')">保存</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteKey('unsplash')">削除</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// ページ読み込み時に設定を確認
+window.onload = function() {
+    checkSettings();
+    // Force clear all fields after browser autofill
+    setTimeout(() => {
+        document.getElementById('gemini-key').value = '';
+        document.getElementById('openai-key').value = '';
+        document.getElementById('unsplash-key').value = '';
+    }, 500);
+};
+
+// パスワード表示切り替え
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    field.type = field.type === 'password' ? 'text' : 'password';
+}
+
+// 設定確認
+function checkSettings() {
+    fetch('/api/image-generation/settings')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Gemini
+                const geminiStatus = data.settings.gemini_image?.api_key_masked || '未設定';
+                document.getElementById('gemini-current').innerHTML = 
+                    geminiStatus !== '未設定' ? 
+                    `<span class="text-success">設定済み (${geminiStatus})</span>` : 
+                    '<span class="text-warning">未設定</span>';
+                
+                // OpenAI
+                const openaiStatus = data.settings.gpt_image?.api_key_masked || '未設定';
+                document.getElementById('openai-current').innerHTML = 
+                    openaiStatus !== '未設定' ? 
+                    `<span class="text-success">設定済み (${openaiStatus})</span>` : 
+                    '<span class="text-warning">未設定</span>';
+                
+                // Unsplash
+                const unsplashStatus = data.settings.unsplash?.access_key_masked || '未設定';
+                document.getElementById('unsplash-current').innerHTML = 
+                    unsplashStatus !== '未設定' ? 
+                    `<span class="text-success">設定済み (${unsplashStatus})</span>` : 
+                    '<span class="text-warning">未設定</span>';
+                
+                // 個別ステータスバッジも更新
+                updateStatusBadges(data.settings);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('設定の読み込みに失敗しました', 'danger');
+        });
+}
+
+// ステータスバッジ更新
+function updateStatusBadges(settings) {
+    // Gemini
+    if (settings.gemini_image?.api_key_masked) {
+        document.getElementById('gemini-status').innerHTML = 
+            `<span class="badge bg-success"><i class="bi bi-check-circle"></i> 設定済み: ${settings.gemini_image.api_key_masked}</span>`;
+    } else {
+        document.getElementById('gemini-status').innerHTML = 
+            '<span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> 未設定</span>';
+    }
+    
+    // OpenAI
+    if (settings.gpt_image?.api_key_masked) {
+        document.getElementById('openai-status').innerHTML = 
+            `<span class="badge bg-success"><i class="bi bi-check-circle"></i> 設定済み: ${settings.gpt_image.api_key_masked}</span>`;
+    } else {
+        document.getElementById('openai-status').innerHTML = 
+            '<span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> 未設定</span>';
+    }
+    
+    // Unsplash
+    if (settings.unsplash?.access_key_masked) {
+        document.getElementById('unsplash-status').innerHTML = 
+            `<span class="badge bg-success"><i class="bi bi-check-circle"></i> 設定済み: ${settings.unsplash.access_key_masked}</span>`;
+    } else {
+        document.getElementById('unsplash-status').innerHTML = 
+            '<span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> 未設定</span>';
+    }
+}
+
+// キー保存
+function saveKey(service) {
+    let key = '';
+    let payload = {};
+    
+    if (service === 'gemini') {
+        key = document.getElementById('gemini-key').value;
+        if (!key) {
+            showMessage('Gemini APIキーを入力してください', 'warning');
+            return;
+        }
+        payload = {gemini_api_key: key};
+    } else if (service === 'openai') {
+        key = document.getElementById('openai-key').value;
+        if (!key) {
+            showMessage('OpenAI APIキーを入力してください', 'warning');
+            return;
+        }
+        payload = {openai_api_key: key};
+    } else if (service === 'unsplash') {
+        key = document.getElementById('unsplash-key').value;
+        if (!key) {
+            showMessage('Unsplash アクセスキーを入力してください', 'warning');
+            return;
+        }
+        payload = {unsplash_access_key: key};
+    }
+    
+    fetch('/api/image-generation/api-keys', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(`${service.toUpperCase()} APIキーを保存しました`, 'success');
+            // 入力フィールドをクリア
+            document.getElementById(service + '-key').value = '';
+            // 設定を再確認
+            setTimeout(checkSettings, 500);
+        } else {
+            showMessage('保存に失敗しました: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('保存中にエラーが発生しました', 'danger');
+    });
+}
+
+// キー削除
+function deleteKey(service) {
+    if (!confirm(`${service.toUpperCase()} APIキーを削除しますか？`)) {
+        return;
+    }
+    
+    let payload = {};
+    if (service === 'gemini') {
+        payload = {gemini_api_key: ''};
+    } else if (service === 'openai') {
+        payload = {openai_api_key: ''};
+    } else if (service === 'unsplash') {
+        payload = {unsplash_access_key: ''};
+    }
+    
+    fetch('/api/image-generation/api-keys', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(`${service.toUpperCase()} APIキーを削除しました`, 'success');
+            setTimeout(checkSettings, 500);
+        } else {
+            showMessage('削除に失敗しました: ' + data.message, 'danger');
+        }
+    });
+}
+
+// メッセージ表示
+function showMessage(message, type) {
+    const messageArea = document.getElementById('message-area');
+    messageArea.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // 5秒後に自動的に消す
+    setTimeout(() => {
+        messageArea.innerHTML = '';
+    }, 5000);
+}
+</script>
+{% endblock %}

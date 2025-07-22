@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-key"></i> 画像生成APIキー設定
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">APIキー管理</h5>
+                </div>
+                <div class="card-body">
+                    <!-- 現在の設定状態 -->
+                    <div class="alert alert-info">
+                        <h6>現在の設定状態</h6>
+                        <p>Gemini APIキー: <span id="gemini-status">確認中...</span></p>
+                        <p>OpenAI APIキー: <span id="openai-status">確認中...</span></p>
+                    </div>
+                    
+                    <!-- Gemini API Key -->
+                    <div class="mb-4">
+                        <h6>Google Gemini APIキー</h6>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">APIキー</span>
+                            <input type="text" 
+                                   class="form-control font-monospace" 
+                                   id="input-gemini-2024"
+                                   placeholder="AIzaSy...で始まるキーを入力">
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="saveGeminiKey()">
+                            Gemini APIキーを保存
+                        </button>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- OpenAI API Key -->
+                    <div class="mb-4">
+                        <h6>OpenAI APIキー</h6>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">APIキー</span>
+                            <input type="text" 
+                                   class="form-control font-monospace" 
+                                   id="input-openai-2024"
+                                   placeholder="sk-...で始まるキーを入力">
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="saveOpenAIKey()">
+                            OpenAI APIキーを保存
+                        </button>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- 一括保存 -->
+                    <button class="btn btn-success" onclick="saveAllKeys()">
+                        両方のAPIキーを保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ページロード時の初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // フィールドを完全にクリア
+    document.getElementById('input-gemini-2024').value = '';
+    document.getElementById('input-openai-2024').value = '';
+    
+    // 現在の設定を読み込む
+    loadCurrentSettings();
+});
+
+function loadCurrentSettings() {
+    fetch('/api/image-generation/settings')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const s = data.settings;
+                
+                // Gemini状態
+                if (s.gemini_image?.api_key_masked) {
+                    document.getElementById('gemini-status').innerHTML = 
+                        `<span class="text-success">設定済み (${s.gemini_image.api_key_masked})</span>`;
+                } else {
+                    document.getElementById('gemini-status').innerHTML = 
+                        '<span class="text-danger">未設定</span>';
+                }
+                
+                // OpenAI状態
+                if (s.gpt_image?.api_key_masked) {
+                    document.getElementById('openai-status').innerHTML = 
+                        `<span class="text-success">設定済み (${s.gpt_image.api_key_masked})</span>`;
+                } else {
+                    document.getElementById('openai-status').innerHTML = 
+                        '<span class="text-danger">未設定</span>';
+                }
+            }
+        });
+}
+
+function saveGeminiKey() {
+    const key = document.getElementById('input-gemini-2024').value.trim();
+    
+    if (!key) {
+        alert('Gemini APIキーを入力してください');
+        return;
+    }
+    
+    if (!key.startsWith('AIzaSy')) {
+        alert('Gemini APIキーは通常 AIzaSy で始まります');
+        return;
+    }
+    
+    saveKeys(key, '');
+}
+
+function saveOpenAIKey() {
+    const key = document.getElementById('input-openai-2024').value.trim();
+    
+    if (!key) {
+        alert('OpenAI APIキーを入力してください');
+        return;
+    }
+    
+    if (!key.startsWith('sk-')) {
+        alert('OpenAI APIキーは通常 sk- で始まります');
+        return;
+    }
+    
+    saveKeys('', key);
+}
+
+function saveAllKeys() {
+    const geminiKey = document.getElementById('input-gemini-2024').value.trim();
+    const openaiKey = document.getElementById('input-openai-2024').value.trim();
+    
+    saveKeys(geminiKey, openaiKey);
+}
+
+function saveKeys(geminiKey, openaiKey) {
+    const data = {
+        gemini_api_key: geminiKey,
+        openai_api_key: openaiKey
+    };
+    
+    console.log('保存するデータ:', {
+        gemini: geminiKey ? geminiKey.substring(0, 10) + '...' : '空',
+        openai: openaiKey ? openaiKey.substring(0, 10) + '...' : '空'
+    });
+    
+    fetch('/api/image-generation/api-keys', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            alert('保存しました');
+            
+            // 入力フィールドをクリア
+            if (geminiKey) document.getElementById('input-gemini-2024').value = '';
+            if (openaiKey) document.getElementById('input-openai-2024').value = '';
+            
+            // 設定を再読み込み
+            loadCurrentSettings();
+        } else {
+            alert('エラー: ' + (result.error || '不明なエラー'));
+        }
+    })
+    .catch(err => {
+        alert('通信エラー: ' + err.message);
+    });
+}
+</script>
+
+<style>
+/* モノスペースフォントで見やすく */
+.font-monospace {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+}
+
+/* 入力フィールドのスタイル */
+#input-gemini-2024,
+#input-openai-2024 {
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+}
+
+#input-gemini-2024:focus,
+#input-openai-2024:focus {
+    background-color: #fff;
+    border-color: #80bdff;
+}
+</style>
+{% endblock %}

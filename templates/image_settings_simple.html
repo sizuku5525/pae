@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-key"></i> APIキー設定（シンプル版）
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">画像生成APIキー</h5>
+                </div>
+                <div class="card-body">
+                    <!-- シンプルなフォーム -->
+                    <form onsubmit="saveKeys(event)">
+                        <div class="mb-3">
+                            <label>Gemini APIキー</label>
+                            <input type="text" id="gemini-key" class="form-control">
+                            <div id="gemini-status"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label>OpenAI APIキー</label>
+                            <input type="text" id="openai-key" class="form-control">
+                            <div id="openai-status"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div>
+                        <h6>現在の設定状態</h6>
+                        <pre id="current-status"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// シンプルなJavaScript
+function loadStatus() {
+    fetch('/api/image-generation/settings')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const s = data.settings;
+                document.getElementById('current-status').textContent = JSON.stringify({
+                    gemini_masked: s.gemini_image?.api_key_masked || 'なし',
+                    openai_masked: s.gpt_image?.api_key_masked || 'なし'
+                }, null, 2);
+                
+                if (s.gemini_image?.api_key_masked) {
+                    document.getElementById('gemini-status').innerHTML = 
+                        '<small class="text-success">設定済み: ' + s.gemini_image.api_key_masked + '</small>';
+                }
+                if (s.gpt_image?.api_key_masked) {
+                    document.getElementById('openai-status').innerHTML = 
+                        '<small class="text-success">設定済み: ' + s.gpt_image.api_key_masked + '</small>';
+                }
+            }
+        });
+}
+
+function saveKeys(e) {
+    e.preventDefault();
+    
+    const geminiKey = document.getElementById('gemini-key').value;
+    const openaiKey = document.getElementById('openai-key').value;
+    
+    console.log('送信データ:', {geminiKey, openaiKey});
+    
+    fetch('/api/image-generation/api-keys', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            gemini_api_key: geminiKey,
+            openai_api_key: openaiKey
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        console.log('レスポンス:', data);
+        if (data.success) {
+            alert('保存しました');
+            document.getElementById('gemini-key').value = '';
+            document.getElementById('openai-key').value = '';
+            loadStatus();
+        } else {
+            alert('エラー: ' + (data.error || 'Unknown'));
+        }
+    });
+}
+
+// 初期ロード
+loadStatus();
+</script>
+{% endblock %}

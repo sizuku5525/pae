@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- ページヘッダー -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-cash-stack"></i> アフィリエイト管理
+        </h1>
+        <p class="text-muted">アフィリエイトプログラムと案件の管理</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addProgramModal">
+            <i class="bi bi-plus-circle"></i> プログラム追加
+        </button>
+        <button class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#addProductModal">
+            <i class="bi bi-plus-circle"></i> 案件追加
+        </button>
+    </div>
+</div>
+
+<!-- タブナビゲーション -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#programs">
+            <i class="bi bi-building"></i> プログラム一覧
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#products">
+            <i class="bi bi-box"></i> 案件一覧
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- プログラム一覧タブ -->
+    <div class="tab-pane fade show active" id="programs">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>プログラム名</th>
+                                <th>説明</th>
+                                <th>報酬率</th>
+                                <th>Cookie期間</th>
+                                <th>案件数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="programsTable">
+                            <!-- 動的に追加 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 案件一覧タブ -->
+    <div class="tab-pane fade" id="products">
+        <!-- フィルター -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <select class="form-select" id="filterProgram">
+                            <option value="">すべてのプログラム</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="searchProduct" 
+                               placeholder="案件名で検索...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 案件カード -->
+        <div class="row" id="productsContainer">
+            <!-- 動的に追加 -->
+        </div>
+    </div>
+</div>
+
+<!-- プログラム追加モーダル -->
+<div class="modal fade" id="addProgramModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-building"></i> アフィリエイトプログラム登録</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="programForm">
+                    <div class="mb-3">
+                        <label class="form-label">プログラム名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" required
+                               placeholder="例: Amazon アソシエイト">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">説明</label>
+                        <textarea class="form-control" name="description" rows="3"
+                                  placeholder="プログラムの特徴や利点を記載"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">報酬率</label>
+                                <input type="text" class="form-control" name="commission_rate"
+                                       placeholder="例: 2-8%">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Cookie有効期間</label>
+                                <input type="text" class="form-control" name="cookie_duration"
+                                       placeholder="例: 24時間">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">支払い条件</label>
+                        <textarea class="form-control" name="payment_terms" rows="2"
+                                  placeholder="最低支払額、支払いサイクルなど"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">備考</label>
+                        <textarea class="form-control" name="notes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveProgram()">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 案件追加モーダル -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-success text-white">
+                <h5 class="modal-title"><i class="bi bi-box"></i> アフィリエイト案件登録</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">プログラム <span class="text-danger">*</span></label>
+                                <select class="form-select" name="program_id" required>
+                                    <option value="">選択してください</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">案件名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" required
+                                       placeholder="例: プログラミングスクール〇〇">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">価格帯</label>
+                                <input type="text" class="form-control" name="price_range"
+                                       placeholder="例: 月額9,800円〜">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">報酬詳細</label>
+                                <textarea class="form-control" name="commission_details" rows="2"
+                                          placeholder="例: 新規申込1件につき5,000円"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">アフィリエイトリンク</label>
+                                <input type="url" class="form-control" name="link_url"
+                                       placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">商品・サービスの詳細説明 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="description" rows="5" required
+                                          placeholder="AIが理解できるよう、商品の特徴、メリット、使用シーンなどを詳しく記載"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ターゲット層の詳細</label>
+                                <textarea class="form-control" name="target_audience" rows="3"
+                                          placeholder="例: プログラミング未経験だが、エンジニア転職を真剣に考えている25-35歳。現在の仕事に不満があり、手に職をつけたい人"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">セールスポイント</label>
+                                <textarea class="form-control" name="selling_points" rows="4"
+                                          placeholder="・転職保証付き&#10;・現役エンジニアの個別指導&#10;・実践的なカリキュラム&#10;・転職成功率98%"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">成功事例</label>
+                                <textarea class="form-control" name="success_examples" rows="3"
+                                          placeholder="例: 30歳営業職→年収600万円のエンジニアに転職成功"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">プロモーション指針</label>
+                                <textarea class="form-control" name="promotion_guidelines" rows="4"
+                                          placeholder="・体験談を交えて信頼性を高める&#10;・具体的な転職成功データを使用&#10;・無料カウンセリングへの誘導を重視"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">避けるべき表現</label>
+                                <textarea class="form-control" name="avoid_expressions" rows="3"
+                                          placeholder="・誇大広告（必ず転職できる等）&#10;・他社の批判&#10;・根拠のない数値"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">その他メモ</label>
+                        <textarea class="form-control" name="notes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-success" onclick="saveProduct()">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ページ読み込み時
+$(document).ready(function() {
+    loadPrograms();
+    loadProducts();
+});
+
+// プログラム一覧を読み込む
+function loadPrograms() {
+    $.get('/api/affiliate/programs', function(data) {
+        const tbody = $('#programsTable');
+        tbody.empty();
+        
+        data.forEach(program => {
+            tbody.append(`
+                <tr>
+                    <td><strong>${program.name}</strong></td>
+                    <td>${program.description || '-'}</td>
+                    <td>${program.commission_rate || '-'}</td>
+                    <td>${program.cookie_duration || '-'}</td>
+                    <td><span class="badge bg-secondary">${program.product_count || 0}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" onclick="editProgram('${program.program_id}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteProgram('${program.program_id}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+        
+        // フィルター用のプログラムリストも更新
+        updateProgramSelects(data);
+    });
+}
+
+// 案件一覧を読み込む
+function loadProducts() {
+    $.get('/api/affiliate/products', function(data) {
+        const container = $('#productsContainer');
+        container.empty();
+        
+        data.forEach(product => {
+            container.append(`
+                <div class="col-md-6 col-lg-4 mb-4 product-card" data-program="${product.program_id}">
+                    <div class="card h-100 shadow hover-shadow">
+                        <div class="card-header bg-gradient-success text-white">
+                            <h5 class="mb-0">${product.name}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-building"></i> ${product.program_name || 'プログラム未設定'}
+                            </p>
+                            <p class="mb-3">${product.description}</p>
+                            <div class="mb-2">
+                                <span class="text-muted">価格:</span> ${product.price_range || '-'}
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted">報酬:</span> ${product.commission_details || '-'}
+                            </div>
+                            <div class="mb-3">
+                                <span class="text-muted">ターゲット:</span><br>
+                                <small>${product.target_audience || '-'}</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <button class="btn btn-sm btn-warning" onclick="editProduct('${product.product_id}')">
+                                <i class="bi bi-pencil"></i> 編集
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProduct('${product.product_id}')">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                            <button class="btn btn-sm btn-info float-end" onclick="viewProduct('${product.product_id}')">
+                                <i class="bi bi-eye"></i> 詳細
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `);
+        });
+    });
+}
+
+// プログラム選択肢を更新
+function updateProgramSelects(programs) {
+    const selects = ['#filterProgram', '[name="program_id"]'];
+    
+    selects.forEach(selector => {
+        const select = $(selector);
+        const currentValue = select.val();
+        
+        select.empty();
+        if (selector === '#filterProgram') {
+            select.append('<option value="">すべてのプログラム</option>');
+        } else {
+            select.append('<option value="">選択してください</option>');
+        }
+        
+        programs.forEach(program => {
+            select.append(`<option value="${program.program_id}">${program.name}</option>`);
+        });
+        
+        select.val(currentValue);
+    });
+}
+
+// プログラム保存
+function saveProgram() {
+    const formData = {
+        name: $('[name="name"]').val(),
+        description: $('[name="description"]').val(),
+        commission_rate: $('[name="commission_rate"]').val(),
+        cookie_duration: $('[name="cookie_duration"]').val(),
+        payment_terms: $('[name="payment_terms"]').val(),
+        notes: $('[name="notes"]').val()
+    };
+
+    $.ajax({
+        url: '/api/affiliate/programs',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function() {
+            $('#addProgramModal').modal('hide');
+            loadPrograms();
+            showAlert('success', 'プログラムを追加しました');
+        },
+        error: function() {
+            showAlert('danger', 'エラーが発生しました');
+        }
+    });
+}
+
+// 案件保存
+function saveProduct() {
+    const formData = {
+        program_id: $('[name="program_id"]').val(),
+        name: $('[name="name"]').val(),
+        description: $('[name="description"]').val(),
+        target_audience: $('[name="target_audience"]').val(),
+        selling_points: $('[name="selling_points"]').val(),
+        price_range: $('[name="price_range"]').val(),
+        commission_details: $('[name="commission_details"]').val(),
+        link_url: $('[name="link_url"]').val(),
+        promotion_guidelines: $('[name="promotion_guidelines"]').val(),
+        avoid_expressions: $('[name="avoid_expressions"]').val(),
+        success_examples: $('[name="success_examples"]').val(),
+        notes: $('[name="notes"]').val()
+    };
+
+    $.ajax({
+        url: '/api/affiliate/products',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function() {
+            $('#addProductModal').modal('hide');
+            loadProducts();
+            showAlert('success', '案件を追加しました');
+        },
+        error: function() {
+            showAlert('danger', 'エラーが発生しました');
+        }
+    });
+}
+
+// フィルター処理
+$('#filterProgram').on('change', function() {
+    const programId = $(this).val();
+    if (programId) {
+        $('.product-card').hide();
+        $(`.product-card[data-program="${programId}"]`).show();
+    } else {
+        $('.product-card').show();
+    }
+});
+
+$('#searchProduct').on('keyup', function() {
+    const searchText = $(this).val().toLowerCase();
+    $('.product-card').each(function() {
+        const productName = $(this).find('h5').text().toLowerCase();
+        if (productName.includes(searchText)) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+});
+
+// 削除処理
+function deleteProgram(programId) {
+    if (confirm('このプログラムを削除しますか？関連する案件も削除されます。')) {
+        $.ajax({
+            url: `/api/affiliate/programs/${programId}`,
+            method: 'DELETE',
+            success: function() {
+                loadPrograms();
+                loadProducts();
+            }
+        });
+    }
+}
+
+function deleteProduct(productId) {
+    if (confirm('この案件を削除しますか？')) {
+        $.ajax({
+            url: `/api/affiliate/products/${productId}`,
+            method: 'DELETE',
+            success: function() {
+                loadProducts();
+            }
+        });
+    }
+}
+
+// アラート表示
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3" 
+             style="z-index: 9999;" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('body').append(alertHtml);
+    setTimeout(() => $('.alert').fadeOut(), 3000);
+}
+</script>
+{% endblock %}

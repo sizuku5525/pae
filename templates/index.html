@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- サイドバー -->
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-header bg-gradient-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> クイックアクション</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary w-100 mb-2" data-bs-toggle="modal" data-bs-target="#addSiteModal">
+                    <i class="bi bi-plus-lg"></i> サイトを追加
+                </button>
+                <button class="btn btn-success w-100 mb-2" id="generateArticlesBtn">
+                    <i class="bi bi-file-earmark-text"></i> 記事を生成
+                </button>
+                <button class="btn btn-info w-100" id="publishArticlesBtn">
+                    <i class="bi bi-cloud-upload"></i> 記事を投稿
+                </button>
+            </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="card shadow-sm mt-3">
+            <div class="card-header bg-gradient-info text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> 統計情報</h5>
+            </div>
+            <div class="card-body">
+                <div class="stat-item">
+                    <span class="stat-label">登録サイト数</span>
+                    <span class="stat-value">{{ sites|length }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">総記事数</span>
+                    <span class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">今月の投稿数</span>
+                    <span class="stat-value">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="col-md-9">
+        <!-- アラート表示エリア -->
+        <div id="alertContainer"></div>
+
+        <!-- サイト一覧 -->
+        <div class="card shadow">
+            <div class="card-header bg-gradient-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="bi bi-globe"></i> サイト管理</h4>
+                    <button class="btn btn-sm btn-light" onclick="refreshSites()">
+                        <i class="bi bi-arrow-clockwise"></i> 更新
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="sitesTable">
+                        <thead>
+                            <tr>
+                                <th>選択</th>
+                                <th>サイト名</th>
+                                <th>URL</th>
+                                <th>ジャンル</th>
+                                <th>ターゲット</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for site in sites %}
+                            <tr data-site-id="{{ site.site_id }}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input site-checkbox" 
+                                           value="{{ site.site_id }}">
+                                </td>
+                                <td>
+                                    <strong>{{ site.name }}</strong>
+                                </td>
+                                <td>
+                                    <a href="{{ site.url }}" target="_blank" class="text-decoration-none">
+                                        {{ site.url }} <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-secondary">{{ site.genre or '-' }}</span></td>
+                                <td>{{ site.target_audience or '-' }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning edit-site-btn" 
+                                            data-site-id="{{ site.site_id }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger delete-site-btn" 
+                                            data-site-id="{{ site.site_id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- サイト追加モーダル -->
+<div class="modal fade" id="addSiteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> サイトを追加</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addSiteForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">基本情報</h6>
+                            <div class="mb-3">
+                                <label class="form-label">サイト名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">URL <span class="text-danger">*</span></label>
+                                <input type="url" class="form-control" name="url" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ジャンル</label>
+                                <input type="text" class="form-control" name="genre">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ターゲット読者</label>
+                                <input type="text" class="form-control" name="target_audience">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">WordPress API設定</h6>
+                            <div class="mb-3">
+                                <label class="form-label">ユーザー名</label>
+                                <input type="text" class="form-control" name="wordpress_username">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">アプリケーションパスワード</label>
+                                <input type="password" class="form-control" name="wordpress_app_password">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">収益化方針</label>
+                                <textarea class="form-control" name="monetization_policy" rows="4"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveSite()">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 記事生成設定モーダル -->
+<div class="modal fade" id="generateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-success text-white">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-text"></i> 記事生成設定</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">生成する記事数</label>
+                    <input type="number" class="form-control" id="articleCount" min="1" max="10" value="1">
+                </div>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 選択したサイトに対して記事を生成します。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-success" onclick="executeGenerate()">
+                    <i class="bi bi-play-fill"></i> 生成開始
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ページ読み込み時の初期化
+$(document).ready(function() {
+    // 編集ボタンのイベント
+    $('.edit-site-btn').on('click', function() {
+        const siteId = $(this).data('site-id');
+        // TODO: 編集モーダルを開く
+        alert('編集機能は実装予定です');
+    });
+
+    // 削除ボタンのイベント
+    $('.delete-site-btn').on('click', function() {
+        const siteId = $(this).data('site-id');
+        if (confirm('このサイトを削除してもよろしいですか？')) {
+            deleteSite(siteId);
+        }
+    });
+
+    // 記事生成ボタン
+    $('#generateArticlesBtn').on('click', function() {
+        const selected = $('.site-checkbox:checked');
+        if (selected.length === 0) {
+            showAlert('warning', 'サイトを選択してください');
+            return;
+        }
+        $('#generateModal').modal('show');
+    });
+
+    // 記事投稿ボタン
+    $('#publishArticlesBtn').on('click', function() {
+        const selected = $('.site-checkbox:checked');
+        if (selected.length === 0) {
+            showAlert('warning', 'サイトを選択してください');
+            return;
+        }
+        // TODO: 投稿機能の実装
+        showAlert('info', '記事投稿機能は実装予定です');
+    });
+});
+
+// アラート表示
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('#alertContainer').html(alertHtml);
+}
+
+// サイト保存
+function saveSite() {
+    const formData = {
+        name: $('[name="name"]').val(),
+        url: $('[name="url"]').val(),
+        genre: $('[name="genre"]').val(),
+        target_audience: $('[name="target_audience"]').val(),
+        wordpress_username: $('[name="wordpress_username"]').val(),
+        wordpress_app_password: $('[name="wordpress_app_password"]').val(),
+        monetization_policy: $('[name="monetization_policy"]').val()
+    };
+
+    $.ajax({
+        url: '/api/sites',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function(response) {
+            $('#addSiteModal').modal('hide');
+            showAlert('success', 'サイトを追加しました');
+            setTimeout(() => location.reload(), 1000);
+        },
+        error: function() {
+            showAlert('danger', 'サイトの追加に失敗しました');
+        }
+    });
+}
+
+// サイト削除
+function deleteSite(siteId) {
+    $.ajax({
+        url: `/api/sites/${siteId}`,
+        method: 'DELETE',
+        success: function() {
+            showAlert('success', 'サイトを削除しました');
+            setTimeout(() => location.reload(), 1000);
+        },
+        error: function() {
+            showAlert('danger', 'サイトの削除に失敗しました');
+        }
+    });
+}
+
+// サイト一覧を更新
+function refreshSites() {
+    location.reload();
+}
+
+// 記事生成実行
+function executeGenerate() {
+    const selected = $('.site-checkbox:checked').map(function() {
+        return $(this).val();
+    }).get();
+    
+    const count = $('#articleCount').val();
+    
+    // TODO: 各サイトに対して記事生成APIを呼び出す
+    $('#generateModal').modal('hide');
+    showAlert('success', `${selected.length}サイトに対して${count}件ずつ記事生成を開始しました`);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- ページヘッダー -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-bar-chart"></i> レポート
+        </h1>
+        <p class="text-muted">パフォーマンス分析と統計情報</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-outline-primary" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> 更新
+        </button>
+    </div>
+</div>
+
+<!-- サマリーカード -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card bg-gradient-primary text-white shadow">
+            <div class="card-body">
+                <h6 class="text-uppercase mb-1">総記事数</h6>
+                <h2 class="mb-0">{{ total_articles }}</h2>
+                <small>生成された全記事</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-gradient-success text-white shadow">
+            <div class="card-body">
+                <h6 class="text-uppercase mb-1">公開済み</h6>
+                <h2 class="mb-0">{{ published_articles }}</h2>
+                <small>成功率: {{ "%.1f"|format(success_rate) }}%</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-gradient-info text-white shadow">
+            <div class="card-body">
+                <h6 class="text-uppercase mb-1">平均文字数</h6>
+                <h2 class="mb-0">{{ "{:,}".format(avg_chars) }}</h2>
+                <small>1記事あたり</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- チャートセクション -->
+<div class="row mb-4">
+    <!-- 月別推移 -->
+    <div class="col-md-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> 月別記事数推移</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- サイト別内訳 -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> サイト別記事数</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="siteChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- 時間帯分析 -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-clock"></i> 投稿時間帯分析</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="hourlyChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ステータス内訳 -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-check-circle"></i> ステータス内訳</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- サイト別詳細 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-table"></i> サイト別詳細</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>サイト名</th>
+                                <th>記事数</th>
+                                <th>割合</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for site_name, count in site_data.items() %}
+                            <tr>
+                                <td>{{ site_name }}</td>
+                                <td>{{ count }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" style="width: {{ (count / total_articles * 100) if total_articles > 0 else 0 }}%">
+                                            {{ "%.1f"|format((count / total_articles * 100) if total_articles > 0 else 0) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- パフォーマンス指標 -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> 記事統計</h5>
+            </div>
+            <div class="card-body">
+                <div class="metric-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>総記事数</span>
+                        <span class="fw-bold">{{ total_articles }}</span>
+                    </div>
+                </div>
+                <div class="metric-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>公開済み</span>
+                        <span class="fw-bold text-success">{{ published_articles }}</span>
+                    </div>
+                </div>
+                <div class="metric-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>下書き</span>
+                        <span class="fw-bold text-warning">{{ draft_articles }}</span>
+                    </div>
+                </div>
+                <div class="metric-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>成功率</span>
+                        <span class="fw-bold">{{ "%.1f"|format(success_rate) }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+<script>
+// データを準備
+const monthlyData = {{ monthly_data | tojson | safe }};
+const siteData = {{ site_data | tojson | safe }};
+const hourlyData = {{ hourly_data | tojson | safe }};
+
+// 月別チャート
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+const monthlyChart = new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: Object.keys(monthlyData).sort(),
+        datasets: [{
+            label: '記事数',
+            data: Object.keys(monthlyData).sort().map(key => monthlyData[key]),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// サイト別円グラフ
+const siteCtx = document.getElementById('siteChart').getContext('2d');
+const siteChart = new Chart(siteCtx, {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(siteData),
+        datasets: [{
+            data: Object.values(siteData),
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
+
+// 時間帯別チャート
+const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+const hourlyChart = new Chart(hourlyCtx, {
+    type: 'bar',
+    data: {
+        labels: ['0-4時', '4-8時', '8-12時', '12-16時', '16-20時', '20-24時'],
+        datasets: [{
+            label: '記事数',
+            data: hourlyData,
+            backgroundColor: 'rgba(54, 162, 235, 0.8)'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// ステータス円グラフ
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+    type: 'pie',
+    data: {
+        labels: ['公開済み', '下書き'],
+        datasets: [{
+            data: [{{ published_articles }}, {{ draft_articles }}],
+            backgroundColor: [
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(255, 206, 86, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

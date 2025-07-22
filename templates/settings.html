@@ -1,0 +1,714 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- ページヘッダー -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-gear"></i> 設定
+        </h1>
+        <p class="text-muted">システム設定とAPI管理</p>
+    </div>
+</div>
+
+<!-- 設定タブ -->
+<div class="row">
+    <div class="col-md-3">
+        <!-- 設定メニュー -->
+        <div class="list-group shadow-sm">
+            <a href="#general" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                <i class="bi bi-house"></i> 一般設定
+            </a>
+            <a href="#api" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                <i class="bi bi-key"></i> API設定
+            </a>
+            <a href="#advanced" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                <i class="bi bi-tools"></i> 詳細設定
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="tab-content">
+            <!-- 一般設定 -->
+            <div class="tab-pane fade show active" id="general">
+                <div class="card shadow">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-house"></i> 一般設定</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="generalSettingsForm">
+                            <div class="mb-4">
+                                <label class="form-label">システム名</label>
+                                <input type="text" class="form-control" value="AutoBlogManager" disabled>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">デフォルト言語</label>
+                                <select class="form-select">
+                                    <option value="ja" selected>日本語</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">タイムゾーン</label>
+                                <select class="form-select">
+                                    <option value="Asia/Tokyo" selected>東京 (GMT+9)</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> 保存
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API設定 -->
+            <div class="tab-pane fade" id="api">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-key"></i> API設定</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="apiSettingsForm">
+                            <!-- Claude API -->
+                            <div class="api-section mb-4">
+                                <h6 class="text-primary mb-3">Claude API</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">APIキー</label>
+                                    <div id="claude-status" class="mb-2"></div>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="claudeApiKey" 
+                                               placeholder="sk-ant-api03-..." name="claude_api_key">
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                onclick="toggleApiKey('claudeApiKey')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Anthropicコンソールから取得</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">モデル（自動化設定時使用モデル）</label>
+                                    <select class="form-select" name="claude_model">
+                                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                                        <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                                        <option value="claude-sonnet-4-20250514" selected>Claude 4 Sonnet (最新)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- VeniceAI API -->
+                            <div class="api-section mb-4">
+                                <h6 class="text-primary mb-3">VeniceAI API</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">APIキー（手動生成時に使用する場合は設定）</label>
+                                    <div id="venice-status" class="mb-2"></div>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="veniceApiKey" 
+                                               placeholder="venice-..." name="venice_api_key">
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                onclick="toggleApiKey('veniceApiKey')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">VeniceAIダッシュボードから取得</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Unsplash API -->
+                            <div class="api-section mb-4">
+                                <h6 class="text-primary mb-3">Unsplash API</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Access Key</label>
+                                    <div id="unsplash-status" class="mb-2"></div>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="unsplashAccessKey" 
+                                               placeholder="your-access-key..." name="unsplash_access_key">
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                onclick="toggleApiKey('unsplashAccessKey')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Unsplash Developersから取得</small>
+                                </div>
+                            </div>
+                            
+                            <!-- 画像生成API -->
+                            <hr class="my-4">
+                            <h5 class="text-primary mb-3">画像生成API</h5>
+                            
+                            <!-- OpenAI DALL-E -->
+                            <div class="api-section mb-4">
+                                <h6 class="text-info mb-3">OpenAI DALL-E 3</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">APIキー</label>
+                                    <div id="openai-status" class="mb-2"></div>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="openaiApiKey" 
+                                               placeholder="sk-proj-..." name="openai_api_key">
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                onclick="toggleApiKey('openaiApiKey')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">OpenAIプラットフォームから取得</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Google Gemini -->
+                            <div class="api-section mb-4">
+                                <h6 class="text-info mb-3">Google Gemini</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">APIキー</label>
+                                    <div id="gemini-status" class="mb-2"></div>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="geminiApiKey" 
+                                               placeholder="AIza..." name="gemini_api_key">
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                onclick="toggleApiKey('geminiApiKey')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Google AI Studioから取得</small>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> API設定を保存
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- API使用状況 -->
+                <div class="card shadow">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> API使用状況</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="api-usage mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Claude API</span>
+                                <span class="text-muted">12,500 / 50,000 トークン</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" style="width: 25%"></div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- 詳細設定 -->
+            <div class="tab-pane fade" id="advanced">
+                <div class="card shadow">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-tools"></i> 詳細設定</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            これらの設定を変更するとシステムの動作に影響を与える可能性があります。
+                        </div>
+
+                        <form id="advancedSettingsForm">
+                            <div class="mb-3">
+                                <label class="form-label">リトライ回数</label>
+                                <input type="number" class="form-control" value="3" min="1" max="10" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">タイムアウト（秒）</label>
+                                <input type="number" class="form-control" value="30" min="10" max="300" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">ログレベル</label>
+                                <select class="form-select" disabled>
+                                    <option value="error">エラーのみ</option>
+                                    <option value="warning">警告以上</option>
+                                    <option value="info" selected>情報以上</option>
+                                    <option value="debug">デバッグ</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> 詳細設定を保存
+                            </button>
+                        </form>
+                        
+                        <hr class="my-4">
+                        
+                        <div class="mb-4">
+                            <h6 class="text-danger mb-3">システム初期化</h6>
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle-fill"></i> 
+                                <strong>警告：</strong> この操作はすべてのデータと設定を削除します。元に戻すことはできません。
+                            </div>
+                            <p class="text-muted">以下の項目が削除されます：</p>
+                            <ul class="text-muted">
+                                <li>すべての記事データ</li>
+                                <li>自動化統計情報</li>
+                                <li>サイト設定</li>
+                                <li>APIキー設定</li>
+                                <li>ログファイル</li>
+                                <li>生成された画像</li>
+                            </ul>
+                            <button type="button" class="btn btn-danger" onclick="showResetConfirmation()">
+                                <i class="bi bi-trash3"></i> システムを初期化
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// APIキー表示切り替え
+function toggleApiKey(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = event.target.querySelector('i') || event.target;
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+
+// ページ読み込み時にAPI設定を読み込む
+$(document).ready(function() {
+    // API設定タブがアクティブになったときに設定を読み込む
+    $('a[data-bs-toggle="list"][href="#api"]').on('shown.bs.tab', function() {
+        loadApiSettings();
+    });
+});
+
+// 画像生成API設定を読み込む
+function loadImageApiSettings() {
+    $.ajax({
+        url: '/api/image-generation/settings',
+        method: 'GET',
+        success: function(data) {
+            console.log('画像生成API設定:', data);
+            
+            if (data.settings) {
+                const settings = data.settings;
+                
+                // OpenAI DALL-E（マスクされた値を使用）
+                if (settings.gpt_image && settings.gpt_image.api_key_masked) {
+                    $('#openai-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み
+                        </span>
+                    `);
+                    // 画像生成APIは別エンドポイントから実際の値を取得する必要がある
+                    // ここでは空のままにしておく（ユーザーが入力した場合のみ更新）
+                    $('[name="openai_api_key"]').val('');
+                } else {
+                    $('#openai-status').html(`
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-circle"></i> 未設定
+                        </span>
+                    `);
+                    $('[name="openai_api_key"]').val('');
+                }
+                
+                // Google Gemini（マスクされた値を使用）
+                if (settings.gemini_image && settings.gemini_image.api_key_masked) {
+                    $('#gemini-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み
+                        </span>
+                    `);
+                    // 画像生成APIは別エンドポイントから実際の値を取得する必要がある
+                    // ここでは空のままにしておく（ユーザーが入力した場合のみ更新）
+                    $('[name="gemini_api_key"]').val('');
+                } else {
+                    $('#gemini-status').html(`
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-circle"></i> 未設定
+                        </span>
+                    `);
+                    $('[name="gemini_api_key"]').val('');
+                }
+            }
+            
+            // 画像生成APIの実際の値を取得
+            loadImageApiActualKeys();
+        },
+        error: function() {
+            console.error('画像生成API設定の読み込みに失敗しました');
+        }
+    });
+}
+
+// 画像生成APIの実際のキーを読み込む（新規追加）
+function loadImageApiActualKeys() {
+    $.ajax({
+        url: '/api/image-generation/settings/raw',
+        method: 'GET',
+        success: function(data) {
+            if (data.success && data.settings) {
+                const settings = data.settings;
+                
+                // OpenAI DALL-E
+                if (settings.gpt_image && settings.gpt_image.api_key) {
+                    $('[name="openai_api_key"]').val(settings.gpt_image.api_key);
+                }
+                
+                // Google Gemini
+                if (settings.gemini_image && settings.gemini_image.api_key) {
+                    $('[name="gemini_api_key"]').val(settings.gemini_image.api_key);
+                }
+                
+                // Unsplash（追加で必要な場合）
+                if (settings.unsplash && settings.unsplash.access_key) {
+                    // Unsplashは別のフィールドで管理されているため、ここでは処理しない
+                }
+            }
+        },
+        error: function() {
+            console.error('画像生成API実際の値の読み込みに失敗しました');
+        }
+    });
+}
+
+// API設定を読み込む
+function loadApiSettings() {
+    $.ajax({
+        url: '/api/settings/api',
+        method: 'GET',
+        success: function(data) {
+            console.log('読み込んだAPI設定:', data);
+            
+            // Claude API
+            if (data.claude) {
+                if (data.claude.api_key) {
+                    $('#claude-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み
+                        </span>
+                    `);
+                    // 実際の値を入力フィールドに設定
+                    $('[name="claude_api_key"]').val(data.claude.api_key);
+                } else {
+                    $('#claude-status').html(`
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-circle"></i> 未設定
+                        </span>
+                    `);
+                    $('[name="claude_api_key"]').val('');
+                }
+                if (data.claude.model) {
+                    $('[name="claude_model"]').val(data.claude.model);
+                }
+            }
+            
+            // VeniceAI API
+            if (data.venice) {
+                if (data.venice.api_key) {
+                    $('#venice-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み
+                        </span>
+                    `);
+                    // 実際の値を入力フィールドに設定
+                    $('[name="venice_api_key"]').val(data.venice.api_key);
+                } else {
+                    $('#venice-status').html(`
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-circle"></i> 未設定
+                        </span>
+                    `);
+                    $('[name="venice_api_key"]').val('');
+                }
+            }
+            
+            // Unsplash API
+            if (data.unsplash) {
+                if (data.unsplash.access_key) {
+                    $('#unsplash-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み
+                        </span>
+                    `);
+                    // 実際の値を入力フィールドに設定
+                    $('[name="unsplash_access_key"]').val(data.unsplash.access_key);
+                } else {
+                    $('#unsplash-status').html(`
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-circle"></i> 未設定
+                        </span>
+                    `);
+                    $('[name="unsplash_access_key"]').val('');
+                }
+            }
+            
+            // 画像生成APIも読み込む
+            loadImageApiSettings();
+        },
+        error: function() {
+            console.error('API設定の読み込みに失敗しました');
+        }
+    });
+}
+
+// フォーム送信処理
+$('form').on('submit', function(e) {
+    e.preventDefault();
+    const formId = $(this).attr('id');
+    
+    if (formId === 'apiSettingsForm') {
+        // API設定の保存
+        const claudeKey = $('[name="claude_api_key"]').val();
+        const veniceKey = $('[name="venice_api_key"]').val();
+        const claudeModel = $('[name="claude_model"]').val();
+        
+        console.log('Claude入力フィールドの値:', claudeKey);
+        console.log('Venice入力フィールドの値:', veniceKey);
+        console.log('選択されたモデル:', claudeModel);
+        
+        const unsplashKey = $('[name="unsplash_access_key"]').val();
+        const openaiKey = $('[name="openai_api_key"]').val();
+        const geminiKey = $('[name="gemini_api_key"]').val();
+        
+        const apiData = {
+            claude: {
+                api_key: claudeKey,
+                model: claudeModel
+            },
+            venice: {
+                api_key: veniceKey
+            },
+            unsplash: {
+                access_key: unsplashKey
+            }
+        };
+        
+        console.log('送信するデータ:', JSON.stringify(apiData, null, 2));
+        
+        $.ajax({
+            url: '/api/settings/api',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(apiData),
+            success: function(response) {
+                console.log('保存成功:', response);
+                // 成功メッセージを表示
+                showAlert('success', 'API設定を保存しました');
+                
+                // 保存後にステータスを更新（フィールドはクリアしない）
+                if (claudeKey) {
+                    $('#claude-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み
+                        </span>
+                    `);
+                    // 値はそのまま残す
+                }
+                
+                if (veniceKey) {
+                    $('#venice-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み
+                        </span>
+                    `);
+                    // 値はそのまま残す
+                }
+                
+                if (unsplashKey) {
+                    $('#unsplash-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み
+                        </span>
+                    `);
+                    // 値はそのまま残す
+                }
+                
+                // 画像生成APIキーも保存
+                if (openaiKey || geminiKey) {
+                    const imageApiData = {};
+                    if (openaiKey) {
+                        imageApiData.gpt_api_key = openaiKey;
+                    }
+                    if (geminiKey) {
+                        imageApiData.gemini_api_key = geminiKey;
+                    }
+                    
+                    $.ajax({
+                        url: '/api/image-generation/api-keys',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(imageApiData),
+                        success: function(response) {
+                            console.log('画像生成APIキー保存成功:', response);
+                            // ステータスを更新（フィールドはクリアしない）
+                            if (openaiKey) {
+                                $('#openai-status').html(`
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> 設定済み
+                                    </span>
+                                `);
+                                // 値はそのまま残す
+                            }
+                            if (geminiKey) {
+                                $('#gemini-status').html(`
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> 設定済み
+                                    </span>
+                                `);
+                                // 値はそのまま残す
+                            }
+                        },
+                        error: function(xhr) {
+                            console.error('画像生成APIキー保存エラー:', xhr.responseText);
+                        }
+                    });
+                }
+            },
+            error: function(xhr) {
+                console.error('保存エラー:', xhr.responseText);
+                showAlert('danger', 'API設定の保存に失敗しました: ' + (xhr.responseJSON?.error || '不明なエラー'));
+            }
+        });
+    } else {
+        // TODO: 他のフォームの保存処理
+        alert(`${formId} を保存しました`);
+    }
+});
+
+// アラート表示関数
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // API設定タブ内の最初に挿入
+    $('#api .card-body').first().prepend(alertHtml);
+    
+    // 5秒後に自動的に消す
+    setTimeout(function() {
+        $('.alert').fadeOut('slow', function() {
+            $(this).remove();
+        });
+    }, 5000);
+}
+
+// システム初期化の確認ダイアログ
+function showResetConfirmation() {
+    const modal = `
+        <div class="modal fade" id="resetModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle-fill"></i> システム初期化の確認
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger">
+                            <strong>最終確認：</strong> 本当にシステムを初期化しますか？
+                        </div>
+                        <p>この操作により、以下のすべてのデータが削除されます：</p>
+                        <ul>
+                            <li>生成された記事（<span id="articleCount">計算中...</span>件）</li>
+                            <li>サイト設定</li>
+                            <li>APIキー設定</li>
+                            <li>自動化統計</li>
+                            <li>ログファイル</li>
+                            <li>生成された画像</li>
+                        </ul>
+                        <p class="text-danger fw-bold">この操作は元に戻せません。</p>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmReset">
+                            <label class="form-check-label" for="confirmReset">
+                                上記の内容を理解し、システムを初期化することに同意します
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                        <button type="button" class="btn btn-danger" id="confirmResetBtn" disabled onclick="performSystemReset()">
+                            <i class="bi bi-trash3"></i> 初期化を実行
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(modal);
+    
+    // 記事数を取得
+    $.ajax({
+        url: '/api/articles',
+        method: 'GET',
+        success: function(articles) {
+            $('#articleCount').text(articles.length);
+        }
+    });
+    
+    // チェックボックスの状態に応じてボタンを有効/無効化
+    $('#confirmReset').on('change', function() {
+        $('#confirmResetBtn').prop('disabled', !this.checked);
+    });
+    
+    // モーダルを表示
+    const resetModal = new bootstrap.Modal(document.getElementById('resetModal'));
+    resetModal.show();
+    
+    // モーダルが閉じられたら削除
+    $('#resetModal').on('hidden.bs.modal', function() {
+        $(this).remove();
+    });
+}
+
+// システム初期化を実行
+function performSystemReset() {
+    // ボタンを無効化してローディング表示
+    const btn = $('#confirmResetBtn');
+    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>初期化中...');
+    
+    $.ajax({
+        url: '/api/system/reset',
+        method: 'POST',
+        success: function(response) {
+            // モーダルを閉じる
+            bootstrap.Modal.getInstance(document.getElementById('resetModal')).hide();
+            
+            // 成功メッセージを表示
+            alert('システムの初期化が完了しました。ページを再読み込みします。');
+            
+            // ページをリロード
+            window.location.reload();
+        },
+        error: function(xhr) {
+            // エラーメッセージを表示
+            alert('初期化に失敗しました: ' + (xhr.responseJSON?.error || '不明なエラー'));
+            
+            // ボタンを元に戻す
+            btn.prop('disabled', false).html('<i class="bi bi-trash3"></i> 初期化を実行');
+        }
+    });
+}
+</script>
+{% endblock %}

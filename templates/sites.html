@@ -1,0 +1,749 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- ページヘッダー -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-globe"></i> サイト管理
+        </h1>
+        <p class="text-muted">登録サイトの管理と設定</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addSiteModal">
+            <i class="bi bi-plus-circle"></i> 新規サイト追加
+        </button>
+    </div>
+</div>
+
+<!-- フィルターバー -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="searchSites" placeholder="サイト名で検索...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterGenre">
+                    <option value="">すべてのジャンル</option>
+                    <option value="blog">ブログ</option>
+                    <option value="news">ニュース</option>
+                    <option value="ec">EC</option>
+                    <option value="corporate">企業サイト</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterStatus">
+                    <option value="">すべてのステータス</option>
+                    <option value="active">アクティブ</option>
+                    <option value="inactive">非アクティブ</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- サイトカード一覧 -->
+<div class="row" id="siteCards">
+    {% for site in sites %}
+    <div class="col-md-6 col-lg-4 mb-4 site-card" data-site-id="{{ site.site_id }}">
+        <div class="card h-100 shadow hover-shadow">
+            <div class="card-header bg-gradient-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ site.name }}</h5>
+                    <span class="badge bg-light text-dark">{{ site.genre or 'その他' }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    <i class="bi bi-link"></i> 
+                    <a href="{{ site.url }}" target="_blank" class="text-decoration-none">
+                        {{ site.url }}
+                    </a>
+                </p>
+                
+                <div class="site-info mb-3">
+                    <div class="info-item">
+                        <span class="text-muted">ターゲット:</span>
+                        <span>{{ site.target_audience or '未設定' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="text-muted">記事数:</span>
+                        <span>{{ site.article_count or 0 }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="text-muted">最終更新:</span>
+                        <span>{{ site.last_update or '未投稿' }}</span>
+                    </div>
+                </div>
+
+                <div class="progress mb-3" style="height: 10px;">
+                    <div class="progress-bar bg-success" style="width: {{ site.health or 0 }}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editSite('{{ site.site_id }}')">
+                        <i class="bi bi-pencil"></i> 編集
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" onclick="generateForSite('{{ site.site_id }}')">
+                        <i class="bi bi-magic"></i> 記事生成
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSite('{{ site.site_id }}')">
+                        <i class="bi bi-trash"></i> 削除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- サイト追加モーダル -->
+<div class="modal fade" id="addSiteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> 新規サイト登録</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="siteForm">
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#basicInfo">基本情報</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#wpSettings">WordPress設定</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#monetization">収益化設定</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#categories">カテゴリ管理</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- 基本情報タブ -->
+                        <div class="tab-pane fade show active" id="basicInfo">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">サイト名 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="name" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">URL <span class="text-danger">*</span></label>
+                                        <input type="url" class="form-control" name="url" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">ジャンル</label>
+                                        <select class="form-select" name="genre">
+                                            <option value="">選択してください</option>
+                                            <option value="blog">ブログ</option>
+                                            <option value="news">ニュース</option>
+                                            <option value="ec">EC</option>
+                                            <option value="corporate">企業サイト</option>
+                                            <option value="tech">テクノロジー</option>
+                                            <option value="lifestyle">ライフスタイル</option>
+                                            <option value="health">健康・美容</option>
+                                            <option value="finance">金融・投資</option>
+                                            <option value="education">教育</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">ターゲット読者</label>
+                                        <input type="text" class="form-control" name="target_audience" 
+                                               placeholder="例: 20代女性、ビジネスパーソン">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ジャンルの詳細説明</label>
+                                <textarea class="form-control" name="genre_details" rows="3"
+                                          placeholder="例: プログラミング初心者向けの技術ブログで、特にPythonとデータ分析に特化しています。実践的なコード例と図解を重視し、理論より実装を優先します。"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ターゲット読者の詳細説明</label>
+                                <textarea class="form-control" name="target_details" rows="3"
+                                          placeholder="例: プログラミング経験1年未満の20-30代。IT企業への転職を考えている、または現在の仕事でデータ分析スキルを身につけたい人。数学的な知識は高校レベル。"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">使用するAIモデル（手動生成時）</label>
+                                <select class="form-select" name="ai_model">
+                                    <option value="claude" selected>Claude 4 Sonnet</option>
+                                    <option value="venice">VeniceAI (Llama 3.3 70B)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">トーン・文体の指定</label>
+                                <textarea class="form-control" name="content_tone" rows="3"
+                                          placeholder="例: フレンドリーで親しみやすい口調、専門用語は避けて平易な言葉で説明、読者に寄り添う共感的な文体"></textarea>
+                                <small class="form-text text-muted">記事全体のトーンや文体の方向性を指定します</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">記事作成ルール・決め事</label>
+                                <textarea class="form-control" name="content_rules" rows="3"
+                                          placeholder="例: 必ず具体的な数字を入れる、実体験を交える、最後に行動を促すCTAを含める、ネガティブな表現は避ける"></textarea>
+                                <small class="form-text text-muted">記事作成時に必ず守るべきルールや決め事を記載します</small>
+                            </div>
+                            
+                            <h5 class="mt-4 mb-3 text-primary"><i class="bi bi-image"></i> 画像生成設定</h5>
+                            <div class="mb-3">
+                                <label class="form-label">画像生成サービス</label>
+                                <select class="form-select" name="image_service">
+                                    <option value="none">画像を使用しない</option>
+                                    <option value="auto" selected>自動選択</option>
+                                    <option value="gemini_image">Google Gemini AI</option>
+                                    <option value="gpt_image">OpenAI GPT Image</option>
+                                    <option value="unsplash">Unsplash（無料写真）</option>
+                                </select>
+                                <small class="form-text text-muted">使用する画像生成サービスを選択（APIキーの設定が必要）</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">画像スタイル</label>
+                                <select class="form-select" name="image_style">
+                                    <option value="photorealistic" selected>実写的（photorealistic）</option>
+                                    <option value="illustration">イラスト風（illustration）</option>
+                                    <option value="minimalist">ミニマリスト（minimalist）</option>
+                                    <option value="artistic">アート風（artistic）</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">画像のトーン・雰囲気</label>
+                                <textarea class="form-control" name="image_tone" rows="2"
+                                          placeholder="例: 明るくポジティブな雰囲気、暖色系の色調、プロフェッショナルな印象"></textarea>
+                                <small class="form-text text-muted">生成される画像の雰囲気や色調を指定します</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">画像生成の追加指示</label>
+                                <textarea class="form-control" name="image_instructions" rows="2"
+                                          placeholder="例: 人物は日本人、8K高画質、朝の自然光、笑顔の表情"></textarea>
+                                <small class="form-text text-muted">画像生成時の具体的な指示を記載します</small>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">画像サイズ</label>
+                                        <select class="form-select" name="image_size">
+                                            <option value="1024x1024">正方形 - 1024×1024</option>
+                                            <option value="1792x1024" selected>横長 - 1792×1024（推奨）</option>
+                                            <option value="1024x1792">縦長 - 1024×1792</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">画質設定</label>
+                                        <input type="text" class="form-control" name="image_quality" 
+                                               value="8K, ultra detailed, high resolution"
+                                               placeholder="例: 8K, 4K, HD">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">回避用語（カンマ区切り）</label>
+                                <input type="text" class="form-control" name="image_avoid_terms" 
+                                       value="low quality, blurry, distorted"
+                                       placeholder="例: low quality, blurry, text, watermark">
+                                <small class="form-text text-muted">生成時に避けるべき要素を指定します</small>
+                            </div>
+                        </div>
+
+                        <!-- WordPress設定タブ -->
+                        <div class="tab-pane fade" id="wpSettings">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> WordPress REST APIを使用するための認証情報を入力してください。
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ユーザー名</label>
+                                <input type="text" class="form-control" name="wordpress_username">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">アプリケーションパスワード</label>
+                                <input type="password" class="form-control" name="wordpress_app_password">
+                                <small class="text-muted">WordPress管理画面から生成できます</small>
+                            </div>
+                        </div>
+
+                        <!-- 収益化設定タブ -->
+                        <div class="tab-pane fade" id="monetization">
+                            <div class="mb-3">
+                                <label class="form-label">収益化方針</label>
+                                <textarea class="form-control" name="monetization_policy" rows="3"
+                                          placeholder="アフィリエイト、広告配置などの方針を記載"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">サイトの目的・ミッション <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="site_purpose" rows="5" required
+                                          placeholder="例: このサイトは初心者向けにプログラミングを分かりやすく解説し、実践的なスキルを身につけてもらうことを目的としています。読者が自信を持ってコードを書けるようになることがゴールです。"></textarea>
+                                <small class="text-muted">AIが記事を生成する際の基本方針となります。詳細に記載してください。</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">コンテンツ作成ガイドライン</label>
+                                <textarea class="form-control" name="content_guidelines" rows="5"
+                                          placeholder="例: 専門用語は必ず分かりやすく解説する。実践的なコード例を含める。読者が手を動かせる内容にする。"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">重点キーワード</label>
+                                <input type="text" class="form-control" name="keywords_focus"
+                                       placeholder="例: Python, 機械学習, データ分析, 初心者向け">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">避けるべきトピック</label>
+                                <input type="text" class="form-control" name="avoid_topics"
+                                       placeholder="例: 政治, 宗教, ギャンブル">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">CTAリンク管理（複数登録可能）</label>
+                                <div id="ctaLinksContainer">
+                                    <!-- CTAリンクが動的に追加される -->
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addCTALink()">
+                                    <i class="bi bi-plus"></i> CTAリンクを追加
+                                </button>
+                            </div>
+                            <!-- 旧形式との互換性のため非表示で保持 -->
+                            <input type="hidden" name="cta_link">
+                            <input type="hidden" name="cta_description">
+                            <div class="mb-3">
+                                <div id="affiliateProgramsList">
+                                    <!-- 動的に追加される -->
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">カスタムプロンプト（上級者向け）</label>
+                                <textarea class="form-control" name="custom_prompt" rows="10"
+                                          placeholder="記事生成時のカスタムプロンプトを設定できます。以下の変数が使用可能です：&#10;{site_name} - サイト名&#10;{genre} - ジャンル&#10;{genre_details} - ジャンル詳細&#10;{target_audience} - ターゲット読者&#10;{target_details} - ターゲット詳細&#10;{site_purpose} - サイトの目的&#10;{content_guidelines} - コンテンツガイドライン&#10;{tone} - 文体&#10;{article_type} - 記事タイプ&#10;{length} - 文字数&#10;{keywords} - キーワード&#10;{affiliate_section} - アフィリエイト情報&#10;{template_structure} - 記事構成&#10;&#10;例：&#10;あなたは{site_name}の専門ライターです。&#10;{length}文字程度の{article_type}を作成してください。&#10;ターゲット読者は{target_audience}です。&#10;必ず{keywords}を含めてください。"></textarea>
+                                <small class="text-muted">空欄の場合はデフォルトのプロンプトが使用されます。文字数は{length}変数で制御できます。</small>
+                            </div>
+                        </div>
+
+                        <!-- カテゴリ管理タブ -->
+                        <div class="tab-pane fade" id="categories">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> WordPressのカテゴリを事前に設定しておくことで、記事投稿時に自動的に適切なカテゴリが選択されます。
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">WordPressカテゴリ</label>
+                                <div id="categoryList" class="mb-2">
+                                    <!-- カテゴリリストが動的に表示される -->
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="fetchWordPressCategories()">
+                                    <i class="bi bi-arrow-clockwise"></i> カテゴリを取得
+                                </button>
+                            </div>
+                            <div id="categoryInputs">
+                                <!-- カテゴリ入力フィールドが動的に追加される -->
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveSite()">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// サイト検索
+$('#searchSites').on('keyup', function() {
+    const searchText = $(this).val().toLowerCase();
+    $('.site-card').each(function() {
+        const siteName = $(this).find('h5').text().toLowerCase();
+        if (siteName.includes(searchText)) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+});
+
+// サイト編集
+function editSite(siteId) {
+    // 既存のデータを取得
+    $.ajax({
+        url: `/api/sites`,
+        method: 'GET',
+        success: function(sites) {
+            const site = sites.find(s => s.site_id === siteId);
+            if (site) {
+                // フォームに値を設定
+                $('#siteForm')[0].reset();
+                $('[name="name"]').val(site.name);
+                $('[name="url"]').val(site.url);
+                $('[name="genre"]').val(site.genre);
+                $('[name="target_audience"]').val(site.target_audience);
+                $('[name="wordpress_username"]').val(site.wordpress_username);
+                $('[name="wordpress_app_password"]').val(site.wordpress_app_password);
+                $('[name="monetization_policy"]').val(site.monetization_policy);
+                $('[name="site_purpose"]').val(site.site_purpose);
+                $('[name="content_guidelines"]').val(site.content_guidelines);
+                $('[name="keywords_focus"]').val(site.keywords_focus);
+                $('[name="avoid_topics"]').val(site.avoid_topics);
+                $('[name="genre_details"]').val(site.genre_details);
+                $('[name="target_details"]').val(site.target_details);
+                $('[name="ai_model"]').val(site.ai_model);
+                $('[name="custom_prompt"]').val(site.custom_prompt);
+                $('[name="cta_link"]').val(site.cta_link);
+                $('[name="cta_description"]').val(site.cta_description);
+                $('[name="content_tone"]').val(site.content_tone || '');
+                $('[name="content_rules"]').val(site.content_rules || '');
+                $('[name="image_service"]').val(site.image_service || 'auto');
+                $('[name="image_style"]').val(site.image_style || 'photorealistic');
+                $('[name="image_tone"]').val(site.image_tone || '');
+                $('[name="image_instructions"]').val(site.image_instructions || '');
+                $('[name="image_size"]').val(site.image_size || '1792x1024');
+                $('[name="image_quality"]').val(site.image_quality || '8K, ultra detailed, high resolution');
+                $('[name="image_avoid_terms"]').val(site.image_avoid_terms || 'low quality, blurry, distorted');
+                
+                // カテゴリを表示
+                if (site.categories && site.categories.length > 0) {
+                    displayCategories(site.categories);
+                }
+                
+                // CTAリンクを表示
+                if (site.cta_links && site.cta_links.length > 0) {
+                    displayCTALinks(site.cta_links);
+                } else if (site.cta_link) {
+                    // 旧形式のCTAリンクがある場合
+                    displayCTALinks([{
+                        url: site.cta_link,
+                        description: site.cta_description,
+                        keywords: '',
+                        target_article_type: 'all'
+                    }]);
+                }
+                
+                // モーダルのタイトルを変更
+                $('#addSiteModal .modal-title').html('<i class="bi bi-pencil"></i> サイト編集');
+                
+                // 保存ボタンの動作を変更
+                $('#addSiteModal .modal-footer .btn-primary').attr('onclick', `updateSite('${siteId}')`);
+                
+                // モーダルを表示
+                $('#addSiteModal').modal('show');
+            }
+        },
+        error: function() {
+            alert('サイト情報の取得に失敗しました');
+        }
+    });
+}
+
+// サイト削除
+function deleteSite(siteId) {
+    if (confirm('このサイトを削除してもよろしいですか？')) {
+        $.ajax({
+            url: `/api/sites/${siteId}`,
+            method: 'DELETE',
+            success: function() {
+                location.reload();
+            },
+            error: function() {
+                alert('削除に失敗しました');
+            }
+        });
+    }
+}
+
+// 特定サイトの記事生成
+function generateForSite(siteId) {
+    window.location.href = `/generate?site=${siteId}`;
+}
+
+// サイト保存
+function saveSite() {
+    const formData = {
+        name: $('[name="name"]').val(),
+        url: $('[name="url"]').val(),
+        genre: $('[name="genre"]').val(),
+        target_audience: $('[name="target_audience"]').val(),
+        wordpress_username: $('[name="wordpress_username"]').val(),
+        wordpress_app_password: $('[name="wordpress_app_password"]').val(),
+        monetization_policy: $('[name="monetization_policy"]').val(),
+        site_purpose: $('[name="site_purpose"]').val(),
+        content_guidelines: $('[name="content_guidelines"]').val(),
+        keywords_focus: $('[name="keywords_focus"]').val(),
+        avoid_topics: $('[name="avoid_topics"]').val(),
+        genre_details: $('[name="genre_details"]').val(),
+        target_details: $('[name="target_details"]').val(),
+        ai_model: $('[name="ai_model"]').val(),
+        custom_prompt: $('[name="custom_prompt"]').val(),
+        cta_link: $('[name="cta_link"]').val(),
+        cta_description: $('[name="cta_description"]').val(),
+        content_tone: $('[name="content_tone"]').val(),
+        content_rules: $('[name="content_rules"]').val(),
+        image_service: $('[name="image_service"]').val(),
+        image_style: $('[name="image_style"]').val(),
+        image_tone: $('[name="image_tone"]').val(),
+        image_instructions: $('[name="image_instructions"]').val(),
+        image_size: $('[name="image_size"]').val(),
+        image_quality: $('[name="image_quality"]').val(),
+        image_avoid_terms: $('[name="image_avoid_terms"]').val(),
+        cta_links: collectCTALinks(),
+        categories: collectCategories()
+    };
+
+    $.ajax({
+        url: '/api/sites',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function() {
+            $('#addSiteModal').modal('hide');
+            location.reload();
+        },
+        error: function() {
+            alert('保存に失敗しました');
+        }
+    });
+}
+
+// サイト更新
+function updateSite(siteId) {
+    const formData = {
+        name: $('[name="name"]').val(),
+        url: $('[name="url"]').val(),
+        genre: $('[name="genre"]').val(),
+        target_audience: $('[name="target_audience"]').val(),
+        wordpress_username: $('[name="wordpress_username"]').val(),
+        wordpress_app_password: $('[name="wordpress_app_password"]').val(),
+        monetization_policy: $('[name="monetization_policy"]').val(),
+        site_purpose: $('[name="site_purpose"]').val(),
+        content_guidelines: $('[name="content_guidelines"]').val(),
+        keywords_focus: $('[name="keywords_focus"]').val(),
+        avoid_topics: $('[name="avoid_topics"]').val(),
+        genre_details: $('[name="genre_details"]').val(),
+        target_details: $('[name="target_details"]').val(),
+        ai_model: $('[name="ai_model"]').val(),
+        custom_prompt: $('[name="custom_prompt"]').val(),
+        cta_link: $('[name="cta_link"]').val(),
+        cta_description: $('[name="cta_description"]').val(),
+        content_tone: $('[name="content_tone"]').val(),
+        content_rules: $('[name="content_rules"]').val(),
+        image_service: $('[name="image_service"]').val(),
+        image_style: $('[name="image_style"]').val(),
+        image_tone: $('[name="image_tone"]').val(),
+        image_instructions: $('[name="image_instructions"]').val(),
+        image_size: $('[name="image_size"]').val(),
+        image_quality: $('[name="image_quality"]').val(),
+        image_avoid_terms: $('[name="image_avoid_terms"]').val(),
+        cta_links: collectCTALinks(),
+        categories: collectCategories()
+    };
+
+    $.ajax({
+        url: `/api/sites/${siteId}`,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function() {
+            $('#addSiteModal').modal('hide');
+            location.reload();
+        },
+        error: function() {
+            alert('更新に失敗しました');
+        }
+    });
+}
+
+// モーダルを閉じる時に元に戻す
+$('#addSiteModal').on('hidden.bs.modal', function () {
+    $('#addSiteModal .modal-title').html('<i class="bi bi-plus-circle"></i> 新規サイト登録');
+    $('#addSiteModal .modal-footer .btn-primary').attr('onclick', 'saveSite()');
+    $('#siteForm')[0].reset();
+    $('#categoryList').empty();
+    $('#categoryInputs').empty();
+    $('#ctaLinksContainer').empty();
+});
+
+// WordPressカテゴリを取得
+function fetchWordPressCategories() {
+    const url = $('[name="url"]').val();
+    const username = $('[name="wordpress_username"]').val();
+    const password = $('[name="wordpress_app_password"]').val();
+    
+    if (!url || !username || !password) {
+        alert('WordPress設定タブでURL、ユーザー名、アプリケーションパスワードを入力してください');
+        return;
+    }
+    
+    // API呼び出し
+    $.ajax({
+        url: '/api/wordpress/categories',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            site_url: url,
+            username: username,
+            app_password: password
+        }),
+        success: function(categories) {
+            displayCategories(categories);
+        },
+        error: function() {
+            alert('カテゴリの取得に失敗しました');
+        }
+    });
+}
+
+// カテゴリを表示
+function displayCategories(categories) {
+    $('#categoryList').empty();
+    if (categories.length === 0) {
+        $('#categoryList').html('<p class="text-muted">カテゴリがありません</p>');
+        return;
+    }
+    
+    const list = $('<div class="list-group"></div>');
+    categories.forEach(cat => {
+        const item = $(`
+            <div class="list-group-item">
+                <div class="form-check">
+                    <input class="form-check-input category-checkbox" type="checkbox" 
+                           value="${cat.id}" id="cat_${cat.id}" 
+                           data-name="${cat.name}" ${cat.selected ? 'checked' : ''}>
+                    <label class="form-check-label" for="cat_${cat.id}">
+                        ${cat.name} <small class="text-muted">(${cat.count || 0}記事)</small>
+                    </label>
+                </div>
+            </div>
+        `);
+        list.append(item);
+    });
+    $('#categoryList').html(list);
+}
+
+// カテゴリ入力を追加
+function addCategoryInput() {
+    const input = $(`
+        <div class="input-group mb-2">
+            <input type="text" class="form-control new-category" placeholder="新しいカテゴリ名">
+            <button class="btn btn-outline-danger" type="button" onclick="$(this).parent().remove()">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `);
+    $('#categoryInputs').append(input);
+}
+
+// カテゴリを収集
+function collectCategories() {
+    const categories = [];
+    
+    // 既存カテゴリ
+    $('.category-checkbox:checked').each(function() {
+        categories.push({
+            id: parseInt($(this).val()),
+            name: $(this).data('name'),
+            selected: true
+        });
+    });
+    
+    // 新規カテゴリ
+    $('.new-category').each(function() {
+        const name = $(this).val().trim();
+        if (name) {
+            categories.push({
+                name: name,
+                new: true
+            });
+        }
+    });
+    
+    return categories;
+}
+
+// CTAリンクを追加
+function addCTALink(cta = null) {
+    const ctaId = Date.now();
+    const ctaHtml = `
+        <div class="cta-link-item border rounded p-3 mb-2" data-cta-id="${ctaId}">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">URL</label>
+                    <input type="url" class="form-control cta-url" 
+                           value="${cta ? cta.url : ''}"
+                           placeholder="https://example.com/register">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">対象キーワード（カンマ区切り）</label>
+                    <input type="text" class="form-control cta-keywords" 
+                           value="${cta ? cta.keywords : ''}"
+                           placeholder="メルマガ,無料,初心者">
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-8">
+                    <label class="form-label">説明文</label>
+                    <textarea class="form-control cta-description" rows="2"
+                              placeholder="このCTAの説明を入力">${cta ? cta.description : ''}</textarea>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">対象記事タイプ</label>
+                    <select class="form-select cta-article-type">
+                        <option value="all" ${cta && cta.target_article_type === 'all' ? 'selected' : ''}>すべて</option>
+                        <option value="howto" ${cta && cta.target_article_type === 'howto' ? 'selected' : ''}>ハウツー</option>
+                        <option value="list" ${cta && cta.target_article_type === 'list' ? 'selected' : ''}>リスト</option>
+                        <option value="review" ${cta && cta.target_article_type === 'review' ? 'selected' : ''}>レビュー</option>
+                        <option value="news" ${cta && cta.target_article_type === 'news' ? 'selected' : ''}>ニュース</option>
+                        <option value="column" ${cta && cta.target_article_type === 'column' ? 'selected' : ''}>コラム</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                            onclick="$(this).closest('.cta-link-item').remove()">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    $('#ctaLinksContainer').append(ctaHtml);
+}
+
+// CTAリンクを収集
+function collectCTALinks() {
+    const ctaLinks = [];
+    $('.cta-link-item').each(function() {
+        const url = $(this).find('.cta-url').val().trim();
+        if (url) {
+            ctaLinks.push({
+                url: url,
+                description: $(this).find('.cta-description').val().trim(),
+                keywords: $(this).find('.cta-keywords').val().trim(),
+                target_article_type: $(this).find('.cta-article-type').val()
+            });
+        }
+    });
+    return ctaLinks;
+}
+
+// CTAリンクを表示
+function displayCTALinks(ctaLinks) {
+    $('#ctaLinksContainer').empty();
+    if (ctaLinks && ctaLinks.length > 0) {
+        ctaLinks.forEach(cta => addCTALink(cta));
+    }
+}
+</script>
+{% endblock %}

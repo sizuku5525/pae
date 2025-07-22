@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- ダッシュボードヘッダー -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-speedometer2"></i> ダッシュボード
+        </h1>
+        <p class="text-muted">WordPress自動化システムの概要</p>
+    </div>
+</div>
+
+<!-- 統計カード -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1">登録サイト</h6>
+                        <h2 class="mb-0">{{ stats.total_sites }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="bi bi-globe"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-primary-dark">
+                <small>アクティブ: {{ stats.active_sites }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1">総記事数</h6>
+                        <h2 class="mb-0">{{ stats.total_articles }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="bi bi-file-text"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-success-dark">
+                <small>今月: +{{ stats.monthly_articles }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1">今日の投稿</h6>
+                        <h2 class="mb-0">{{ stats.today_posts }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-info-dark">
+                <small>予定: {{ stats.scheduled_posts }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1">生成記事数</h6>
+                        <h2 class="mb-0">{{ stats.api_usage }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="bi bi-cpu"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-warning-dark">
+                <small>自動生成による記事数</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- メインコンテンツ -->
+<div class="row">
+    <!-- 左カラム -->
+    <div class="col-md-8">
+        <!-- 最近の活動 -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-activity"></i> 最近の活動
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for activity in recent_activities %}
+                    <div class="timeline-item">
+                        <div class="timeline-badge {{ activity.type_class }}">
+                            <i class="bi {{ activity.icon }}"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h6>{{ activity.title }}</h6>
+                            <p class="text-muted mb-0">{{ activity.description }}</p>
+                            <small class="text-muted">{{ activity.time_ago }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- パフォーマンスチャート -->
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up"></i> 投稿パフォーマンス
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="performanceChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右カラム -->
+    <div class="col-md-4">
+        <!-- クイックアクション -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-gradient-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning"></i> クイックアクション
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/sites" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle"></i> サイトを追加
+                    </a>
+                    <a href="/generate" class="btn btn-outline-success">
+                        <i class="bi bi-magic"></i> 記事を生成
+                    </a>
+                    <a href="/sites" class="btn btn-outline-info">
+                        <i class="bi bi-gear"></i> サイト管理
+                    </a>
+                    <a href="/reports" class="btn btn-outline-warning">
+                        <i class="bi bi-bar-chart"></i> レポート表示
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- サイトステータス -->
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-check-circle"></i> サイトステータス
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for site in site_status %}
+                <div class="site-status-item">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">{{ site.name }}</h6>
+                        <span class="badge bg-{{ site.status_class }}">{{ site.status }}</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 10px;">
+                        <div class="progress-bar bg-{{ site.progress_class }}" 
+                             style="width: {{ site.progress }}%"></div>
+                    </div>
+                    <small class="text-muted">
+                        最終投稿: {{ site.last_post }}
+                    </small>
+                </div>
+                <hr>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- デバッグ用: パフォーマンスデータの確認 -->
+<script>
+// サーバーから渡されたパフォーマンスデータ
+const serverPerformanceData = {{ performance_data | tojson | safe if performance_data else 'null' }};
+console.log('Performance data from server:', serverPerformanceData);
+</script>
+
+<script>
+// パフォーマンスチャートの初期化
+let performanceChart = null;
+
+// チャートを初期化（空のデータ）
+function initChart() {
+    // Canvas要素を取得
+    const canvas = document.getElementById('performanceChart');
+    if (!canvas) {
+        console.error('Canvas element performanceChart not found');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    // 既存のチャートがあれば破棄
+    if (performanceChart) {
+        performanceChart.destroy();
+    }
+    
+    // 初期データを設定（サーバーから渡されたデータまたは空配列）
+    const initialLabels = serverPerformanceData ? serverPerformanceData.labels : [];
+    const initialPublished = serverPerformanceData ? serverPerformanceData.published : [];
+    const initialGenerated = serverPerformanceData ? serverPerformanceData.generated : [];
+    
+    performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: initialLabels,
+            datasets: [{
+                label: '公開数',
+                data: initialPublished,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.4,
+                borderWidth: 2
+            }, {
+                label: '生成数',
+                data: initialGenerated,
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.4,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// パフォーマンスデータを読み込んでチャートを更新
+function loadPerformanceData() {
+    fetch('/api/dashboard/performance')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success && result.data) {
+                const data = result.data;
+                
+                // チャートが存在しない場合は作成
+                if (!performanceChart) {
+                    console.error('Chart not initialized');
+                    initChart();
+                }
+                
+                // チャートのデータを更新
+                performanceChart.data.labels = data.labels;
+                performanceChart.data.datasets[0].data = data.published;
+                performanceChart.data.datasets[1].data = data.generated;
+                performanceChart.update();
+                
+                console.log('パフォーマンスデータを更新しました:', data);
+            } else {
+                console.error('パフォーマンスデータの取得に失敗:', result.error);
+            }
+        })
+        .catch(error => {
+            console.error('パフォーマンスデータの取得エラー:', error);
+        });
+}
+
+// ページ読み込み時にチャートを初期化し、データを読み込む
+function setupChart() {
+    // Chart.jsが読み込まれているか確認
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded');
+        return;
+    }
+    
+    // キャンバス要素の存在確認
+    const canvas = document.getElementById('performanceChart');
+    if (!canvas) {
+        console.error('Canvas element not found');
+        return;
+    }
+    
+    console.log('Initializing chart...');
+    initChart();
+    
+    // サーバーデータがない場合のみAPIから取得
+    if (!serverPerformanceData) {
+        setTimeout(() => {
+            console.log('Loading performance data from API...');
+            loadPerformanceData();
+        }, 100);
+    } else {
+        console.log('Using server-provided performance data');
+    }
+}
+
+// DOMContentLoadedとwindow.onloadの両方で試す
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupChart);
+} else {
+    setupChart();
+}
+
+// バックアップとしてwindow.onloadも使用
+window.addEventListener('load', function() {
+    if (!performanceChart) {
+        console.log('Retrying chart setup on window load...');
+        setupChart();
+    }
+});
+</script>
+{% endblock %}

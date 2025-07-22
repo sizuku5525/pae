@@ -1,0 +1,255 @@
+/* カスタムスタイル */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    --info-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background-color: #f5f7fa;
+    padding-top: 70px;
+}
+
+/* ナビゲーションバー */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    background: var(--primary-gradient) !important;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* カード */
+.card {
+    border: none;
+    border-radius: 10px;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+    border: none;
+}
+
+/* グラデーション背景 */
+.bg-gradient-primary {
+    background: var(--primary-gradient) !important;
+}
+
+.bg-gradient-success {
+    background: var(--success-gradient) !important;
+}
+
+.bg-gradient-info {
+    background: var(--info-gradient) !important;
+    color: #333 !important;
+}
+
+.bg-gradient-warning {
+    background: var(--warning-gradient) !important;
+}
+
+/* テーブル */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* ボタン */
+.btn {
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    border: none;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border: none;
+}
+
+/* 統計情報 */
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #495057;
+}
+
+/* モーダル */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+}
+
+.modal-header {
+    border-radius: 15px 15px 0 0;
+    border: none;
+}
+
+/* バッジ */
+.badge {
+    padding: 0.5em 0.8em;
+    font-weight: 500;
+}
+
+/* フォーム */
+.form-control, .form-select {
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* アラート */
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+/* フッター */
+.footer {
+    margin-top: 50px;
+    border-top: 1px solid #dee2e6;
+}
+
+/* タイムライン */
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: start;
+    margin-bottom: 20px;
+}
+
+.timeline-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+    margin-right: 15px;
+}
+
+.timeline-content {
+    flex: 1;
+}
+
+.timeline-content h6 {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+/* サイトカード */
+.hover-shadow {
+    transition: all 0.3s;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+    transform: translateY(-5px);
+}
+
+.site-info .info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+/* メトリクス */
+.metric-item {
+    margin-bottom: 20px;
+}
+
+/* コスト分析 */
+.cost-breakdown {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* タスクアイテム */
+.task-item {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .stat-item {
+        font-size: 0.9rem;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+    }
+    
+    .table {
+        font-size: 0.9rem;
+    }
+    
+    .navbar-nav {
+        text-align: center;
+    }
+}

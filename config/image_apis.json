@@ -1,0 +1,34 @@
+{
+  "image_generation": {
+    "enabled": true,
+    "auto_selection_mode": "rotate",
+    "primary_service": "gemini_image",
+    "monthly_budget": 1000,
+    "auto_selection_rules": {
+      "use_gemini_first": true,
+      "fallback_to_gpt": true,
+      "fallback_to_unsplash": true
+    },
+    "gemini_image": {
+      "enabled": true,
+      "model": "gemini-2.0-flash-exp",
+      "safety_settings": "medium"
+    },
+    "gpt_image": {
+      "enabled": true,
+      "model": "dall-e-3",
+      "quality": "standard",
+      "size": "1792x1024"
+    },
+    "unsplash": {
+      "enabled": true
+    },
+    "prompt_settings": {
+      "style": "photorealistic",
+      "quality": "8K, ultra detailed, high resolution",
+      "avoid_terms": "low quality, blurry, distorted",
+      "tone": "",
+      "additional_instructions": ""
+    }
+  }
+}

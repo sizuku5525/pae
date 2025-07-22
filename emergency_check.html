@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>APIキー緊急確認</title>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+</head>
+<body>
+    <h1>APIキー表示確認</h1>
+    <div id="result"></div>
+    
+    <script>
+    fetch('/api/image-generation/settings')
+        .then(response => response.json())
+        .then(data => {
+            const html = `
+                <h2>サーバーからの応答:</h2>
+                <p>Gemini masked: ${data.settings.gemini_image?.api_key_masked}</p>
+                <p>OpenAI masked: ${data.settings.gpt_image?.api_key_masked}</p>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            document.getElementById('result').innerHTML = html;
+        });
+    </script>
+</body>
+</html>

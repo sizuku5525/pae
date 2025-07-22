@@ -1,0 +1,1078 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- ページヘッダー -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-magic"></i> 記事生成
+        </h1>
+        <p class="text-muted">AIによる自動記事生成と管理</p>
+    </div>
+</div>
+
+<!-- 生成設定 -->
+<div class="row">
+    <div class="col-md-4">
+        <!-- 設定パネル -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-gradient-success text-white">
+                <h5 class="mb-0"><i class="bi bi-sliders"></i> 生成設定</h5>
+            </div>
+            <div class="card-body">
+                <form id="generateForm">
+                    <div class="mb-3">
+                        <label class="form-label">対象サイト</label>
+                        <select class="form-select" id="targetSite" required>
+                            <option value="">サイトを選択</option>
+                            {% for site in sites %}
+                            <option value="{{ site.site_id }}">{{ site.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">記事数</label>
+                        <input type="number" class="form-control" id="articleCount" 
+                               min="1" max="10" value="1">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">記事タイプ</label>
+                        <select class="form-select" id="articleType">
+                            <option value="auto">自動選択</option>
+                            <option value="howto">ハウツー記事</option>
+                            <option value="list">リスト記事</option>
+                            <option value="review">レビュー記事</option>
+                            <option value="news">ニュース記事</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">文字数目安</label>
+                        <select class="form-select" id="articleLength">
+                            <option value="1000">1,000文字程度</option>
+                            <option value="2000">2,000文字程度</option>
+                            <option value="3000">3,000文字程度</option>
+                            <option value="5000" selected>5,000文字程度</option>
+                            <option value="7000">7,000文字程度</option>
+                            <option value="10000">10,000文字程度</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">キーワード（任意）</label>
+                        <input type="text" class="form-control" id="keywords" 
+                               placeholder="複数の場合はカンマ区切り">
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoPublish" checked>
+                            <label class="form-check-label" for="autoPublish">
+                                生成後に自動でWordPressに投稿
+                            </label>
+                        </div>
+                        <small class="text-muted">
+                            チェックを外すと下書きとして保存されます
+                        </small>
+                    </div>
+
+                    <button type="button" class="btn btn-success w-100" onclick="startGeneration()">
+                        <i class="bi bi-play-fill"></i> 生成開始
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <!-- 生成履歴・進行状況 -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> 生成タスク</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-danger me-2" onclick="clearAllTasks()" 
+                                id="clearTasksBtn" style="display: none;" title="すべてのタスクをクリア">
+                            <i class="bi bi-trash"></i> クリア
+                        </button>
+                        <span class="badge bg-primary" id="activeTaskCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- アクティブタスク -->
+                <div id="activeTasks" style="display: none;">
+                    <h6 class="text-primary mb-3">実行中のタスク</h6>
+                    <div id="taskList"></div>
+                    <hr>
+                </div>
+
+                <!-- 生成履歴 -->
+                <h6 class="text-muted mb-3">生成履歴</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>日時</th>
+                                <th>サイト</th>
+                                <th>タイトル</th>
+                                <th>ステータス</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTable">
+                            {% for article in generated_articles %}
+                            <tr>
+                                <td>{{ article.created_at }}</td>
+                                <td>{{ article.site_name }}</td>
+                                <td>{{ article.title }}</td>
+                                <td>
+                                    <span class="badge bg-{{ article.status_class }}">
+                                        {{ article.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="previewArticle('{{ article.id }}')"
+                                            title="プレビュー">
+                                        <i class="bi bi-eye"></i> 表示
+                                    </button>
+                                    {% if article.status == '下書き' %}
+                                    <button class="btn btn-sm btn-outline-success"
+                                            onclick="publishToWordPress('{{ article.id }}', '{{ article.site_name }}')"
+                                            title="WordPressに投稿">
+                                        <i class="bi bi-wordpress"></i> WP投稿
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 生成プレビュー -->
+        <div class="card shadow" id="previewCard" style="display: none;">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-eye"></i> プレビュー</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="closePreview()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="previewContent">
+                <!-- プレビューコンテンツ -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- タスク進行状況テンプレート -->
+<template id="taskTemplate">
+    <div class="task-item mb-3" data-task-id="">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0 task-title"></h6>
+            <span class="badge bg-info task-status">処理中</span>
+        </div>
+        <div class="progress" style="height: 20px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" style="width: 0%">
+                <span class="progress-text">0%</span>
+            </div>
+        </div>
+        <small class="text-muted task-info mt-1"></small>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// セッションストレージから実行中のタスクを復元
+let activeTasks = {};
+const storedTasks = sessionStorage.getItem('activeTasks');
+if (storedTasks) {
+    try {
+        activeTasks = JSON.parse(storedTasks);
+        // 保存されたタスクを復元
+        Object.keys(activeTasks).forEach(taskId => {
+            const task = activeTasks[taskId];
+            if (task && task.title) {
+                // 完了済みかチェック
+                if (!isTaskCompleted(taskId)) {
+                    restoreTask(taskId, task);
+                } else {
+                    // 完了済みタスクは削除
+                    delete activeTasks[taskId];
+                }
+            }
+        });
+        // クリーンアップ後のタスクを保存
+        sessionStorage.setItem('activeTasks', JSON.stringify(activeTasks));
+    } catch (e) {
+        console.error('Failed to restore tasks:', e);
+        activeTasks = {};
+    }
+}
+
+// タスクが完了済みかチェック
+function isTaskCompleted(taskId) {
+    const completedTasks = JSON.parse(localStorage.getItem('completedTasks') || '{}');
+    return taskId in completedTasks;
+}
+
+// タスクをセッションストレージに保存
+function saveTasksToStorage() {
+    sessionStorage.setItem('activeTasks', JSON.stringify(activeTasks));
+}
+
+// 保存されたタスクを復元
+function restoreTask(taskId, taskData) {
+    const template = document.getElementById('taskTemplate');
+    const task = template.content.cloneNode(true);
+    
+    task.querySelector('.task-item').setAttribute('data-task-id', taskId);
+    task.querySelector('.task-title').textContent = taskData.title;
+    
+    // 進捗状況を復元
+    if (taskData.progress !== undefined) {
+        task.querySelector('.progress-bar').style.width = `${taskData.progress}%`;
+        task.querySelector('.progress-text').textContent = `${Math.round(taskData.progress)}%`;
+    }
+    
+    // ステータスを復元
+    if (taskData.status) {
+        const statusBadge = task.querySelector('.task-status');
+        if (taskData.status === 'completed') {
+            statusBadge.classList.remove('bg-info');
+            statusBadge.classList.add('bg-success');
+            statusBadge.textContent = '完了';
+        }
+    }
+    
+    $('#taskList').append(task);
+    $('#activeTasks').show();
+    
+    // 進行中のタスクは自動的に進捗を継続
+    if (taskData.status !== 'completed' && taskData.progress < 100) {
+        // タスクの存在確認を行ってから監視を開始
+        checkTaskStatus(taskId);
+    }
+}
+
+// タスク完了の永続化
+function markTaskAsCompleted(taskId, title) {
+    const completedTasks = JSON.parse(localStorage.getItem('completedTasks') || '{}');
+    completedTasks[taskId] = {
+        completedAt: new Date().toISOString(),
+        title: title || activeTasks[taskId]?.title || '不明なタスク'
+    };
+    localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+    
+    // 古い完了タスクを削除（24時間以上前のもの）
+    const now = new Date();
+    for (const [id, task] of Object.entries(completedTasks)) {
+        const completedDate = new Date(task.completedAt);
+        if (now - completedDate > 24 * 60 * 60 * 1000) {
+            delete completedTasks[id];
+        }
+    }
+    localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+}
+
+// タスクを監視
+function checkTaskStatus(taskId) {
+    fetch(`/api/task-status/${taskId}`)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    // 404エラーの場合、タスクが完了済みと判断
+                    throw new Error('Task not found - likely completed');
+                }
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'completed') {
+                // 完了
+                updateTaskProgress(taskId, 100);
+                const progressBar = $(`#${taskId}`);
+                progressBar.find('.progress-bar')
+                    .removeClass('progress-bar-striped progress-bar-animated')
+                    .text('完了');
+                
+                // 完了を記録
+                markTaskAsCompleted(taskId, activeTasks[taskId]?.title);
+                
+                // 数秒後にフェードアウト
+                setTimeout(() => {
+                    progressBar.fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                    // セッションストレージから削除
+                    delete activeTasks[taskId];
+                    sessionStorage.setItem('activeTasks', JSON.stringify(activeTasks));
+                }, 3000);
+                
+                // 記事一覧を更新
+                updateArticleHistory();
+            } else if (data.status === 'error') {
+                // エラー
+                updateTaskProgress(taskId, 0);
+                const progressBar = $(`.task-item[data-task-id="${taskId}"]`);
+                progressBar.find('.progress-bar').text('エラー');
+                
+                // エラー詳細を表示
+                if (data.error) {
+                    progressBar.after(`<div class="alert alert-danger mt-2">${data.error}</div>`);
+                }
+                
+                // セッションストレージから削除
+                delete activeTasks[taskId];
+                sessionStorage.setItem('activeTasks', JSON.stringify(activeTasks));
+            } else {
+                // 実行中
+                if (data.progress !== undefined) {
+                    updateTaskProgress(taskId, data.progress);
+                }
+                
+                // 継続して監視
+                setTimeout(() => checkTaskStatus(taskId), 2000);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking task status:', error);
+            
+            // 404エラー（タスクが見つからない）の場合
+            if (error.message.includes('404') || error.message.includes('not found')) {
+                // タスクが完了済みと判断
+                updateTaskProgress(taskId, 100);
+                const progressBar = $(`.task-item[data-task-id="${taskId}"]`);
+                progressBar.find('.progress-bar')
+                    .removeClass('progress-bar-striped progress-bar-animated')
+                    .text('完了済み');
+                
+                // 完了を記録
+                markTaskAsCompleted(taskId, activeTasks[taskId]?.title);
+                
+                // 数秒後にフェードアウト
+                setTimeout(() => {
+                    progressBar.fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                    delete activeTasks[taskId];
+                    sessionStorage.setItem('activeTasks', JSON.stringify(activeTasks));
+                }, 2000);
+                
+                // 記事一覧を更新
+                updateArticleHistory();
+            } else {
+                // その他のネットワークエラー
+                updateTaskProgress(taskId, 0);
+                const progressBar = $(`.task-item[data-task-id="${taskId}"]`);
+                progressBar.find('.progress-bar').text('ネットワークエラー');
+                
+                // リトライまたは削除
+                setTimeout(() => {
+                    progressBar.fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                    delete activeTasks[taskId];
+                    sessionStorage.setItem('activeTasks', JSON.stringify(activeTasks));
+                }, 5000);
+            }
+        });
+}
+
+// タスクの進捗を継続
+function continueTaskProgress(taskId, startProgress) {
+    const taskInfo = activeTasks[taskId];
+    if (!taskInfo) return;
+    
+    // 既に完了している場合は何もしない
+    if (taskInfo.status === 'completed' || startProgress >= 100) {
+        // 100%の場合は完了処理を実行
+        if (startProgress >= 100) {
+            updateTaskProgress(taskId, 100);
+            setTimeout(() => completeTask(taskId), 1000);
+        }
+        return;
+    }
+    
+    // プログレスバーのアニメーションを再開
+    const progressBar = $(`.task-item[data-task-id="${taskId}"] .progress-bar`);
+    progressBar.addClass('progress-bar-animated');
+    
+    // 実際の進捗監視を再開
+    const elapsedTime = taskInfo.startTime ? 
+        (new Date() - new Date(taskInfo.startTime)) / 1000 : 0;
+    
+    // 既に経過した時間を考慮して進捗を継続
+    const articleCount = taskInfo.actualCount || 1;
+    const timePerArticle = 45; // 1記事あたり45秒
+    const totalTime = articleCount * timePerArticle;
+    const remainingTime = Math.max(totalTime - elapsedTime, 5); // 最低5秒
+    
+    let currentProgress = startProgress;
+    const updateInterval = 500; // 0.5秒ごとに更新
+    
+    const interval = setInterval(() => {
+        // 残り時間に基づいて進捗を計算
+        const increment = ((95 - startProgress) / remainingTime) * (updateInterval / 1000);
+        currentProgress = Math.min(currentProgress + increment, 95);
+        
+        // タスクがまだ存在するか確認
+        if (!activeTasks[taskId]) {
+            clearInterval(interval);
+            return;
+        }
+        
+        updateTaskProgress(taskId, currentProgress);
+        
+        // 進捗を保存
+        activeTasks[taskId].progress = currentProgress;
+        saveTasksToStorage();
+        
+        // 95%に達したら完了処理
+        if (currentProgress >= 95) {
+            clearInterval(interval);
+            updateTaskProgress(taskId, 100);
+            setTimeout(() => {
+                completeTask(taskId);
+            }, 1000);
+        }
+    }, updateInterval);
+    
+    // インターバルIDを保存
+    if (activeTasks[taskId]) {
+        activeTasks[taskId].intervalId = interval;
+    }
+}
+
+// 生成開始
+function startGeneration() {
+    const siteId = $('#targetSite').val();
+    const count = $('#articleCount').val();
+    
+    if (!siteId) {
+        alert('サイトを選択してください');
+        return;
+    }
+
+    const taskId = Date.now().toString();
+    const taskData = {
+        site_id: siteId,
+        count: count,
+        type: $('#articleType').val(),
+        length: $('#articleLength').val(),
+        keywords: $('#keywords').val(),
+        auto_publish: $('#autoPublish').is(':checked')
+    };
+
+    // タスクを追加
+    const taskTitle = `${$('#targetSite option:selected').text()} - ${count}件の記事生成`;
+    addTask(taskId, taskTitle, taskData);
+    
+    // タスクの進捗をすぐに開始（API呼び出し前）
+    setTimeout(() => {
+        const taskElement = $(`.task-item[data-task-id="${taskId}"]`);
+        if (taskElement.length > 0) {
+            // プログレスバーを少し進める
+            updateTaskProgress(taskId, 3);
+            taskElement.find('.task-info').text('サーバーに接続中...');
+        }
+    }, 200);
+
+    // 進捗監視を即座に開始（APIレスポンスを待たない）
+    setTimeout(() => {
+        console.log('Starting progress monitoring immediately for task:', taskId);
+        if (activeTasks[taskId]) {
+            activeTasks[taskId].actualCount = parseInt(count);
+            saveTasksToStorage();
+            
+            // 進捗を5%に更新
+            updateTaskProgress(taskId, 5);
+            
+            // 進捗監視を開始
+            monitorActualProgress(taskId);
+        }
+    }, 500);
+
+    // API呼び出し（バックグラウンドで実行）
+    $.ajax({
+        url: '/api/generate',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(taskData),
+        timeout: 300000, // 5分のタイムアウト
+        success: function(response) {
+            console.log('API response received:', response);
+            if (response.success) {
+                // タスクに実際の記事IDを保存
+                if (activeTasks[taskId]) {
+                    activeTasks[taskId].articleIds = response.article_ids || [];
+                    activeTasks[taskId].apiSuccess = true;
+                    activeTasks[taskId].apiCompleted = true;
+                    saveTasksToStorage();
+                    
+                    // APIが完了したら即座に100%にして完了処理
+                    updateTaskProgress(taskId, 100);
+                    setTimeout(() => {
+                        completeTask(taskId);
+                    }, 1000);
+                }
+            } else {
+                console.error('API returned error:', response.error);
+                // エラーでもタスクは継続（ユーザーには後で通知）
+                if (activeTasks[taskId]) {
+                    activeTasks[taskId].apiError = response.error;
+                    activeTasks[taskId].apiCompleted = true;
+                    saveTasksToStorage();
+                }
+            }
+        },
+        error: function(xhr, textStatus, errorThrown) {
+            console.error('API call failed:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseText: xhr.responseText,
+                textStatus: textStatus,
+                errorThrown: errorThrown
+            });
+            
+            // エラーでもタスクは継続
+            if (activeTasks[taskId]) {
+                let errorMessage = 'サーバーエラー';
+                
+                if (xhr.status === 0) {
+                    errorMessage = 'ネットワークエラー（接続できません）';
+                } else if (xhr.status === 500) {
+                    errorMessage = xhr.responseJSON?.error || 'サーバー内部エラー';
+                } else if (xhr.status === 504) {
+                    errorMessage = 'タイムアウト（処理に時間がかかっています）';
+                } else if (xhr.responseJSON?.error) {
+                    errorMessage = xhr.responseJSON.error;
+                }
+                
+                activeTasks[taskId].apiError = errorMessage;
+                activeTasks[taskId].apiCompleted = true;
+                saveTasksToStorage();
+                
+                // エラーでも完了処理を実行
+                updateTaskProgress(taskId, 100);
+                setTimeout(() => {
+                    completeTask(taskId);
+                }, 1000);
+            }
+        }
+    });
+}
+
+// タスク追加
+function addTask(taskId, title, taskData) {
+    const template = document.getElementById('taskTemplate');
+    const task = template.content.cloneNode(true);
+    
+    task.querySelector('.task-item').setAttribute('data-task-id', taskId);
+    task.querySelector('.task-title').textContent = title;
+    
+    $('#taskList').append(task);
+    $('#activeTasks').show();
+    
+    // タスク情報を保存
+    activeTasks[taskId] = { 
+        progress: 0,
+        title: title,
+        status: 'processing',
+        data: taskData,
+        startTime: new Date().toISOString()
+    };
+    
+    saveTasksToStorage();
+    updateActiveTaskCount();
+    
+    // すぐにプログレスバーのアニメーションを開始
+    setTimeout(() => {
+        const addedTask = $(`.task-item[data-task-id="${taskId}"]`);
+        addedTask.find('.progress-bar').addClass('progress-bar-animated');
+        updateTaskProgress(taskId, 1); // 1%から開始
+    }, 100);
+}
+
+// タスク数更新
+function updateActiveTaskCount() {
+    const count = Object.keys(activeTasks).length;
+    $('#activeTaskCount').text(count);
+    
+    // タスクがある場合はクリアボタンを表示
+    if (count > 0) {
+        $('#clearTasksBtn').show();
+    } else {
+        $('#clearTasksBtn').hide();
+    }
+}
+
+// すべてのタスクをクリア
+function clearAllTasks() {
+    if (confirm('すべてのタスクをクリアしますか？')) {
+        // DOMからすべてのタスクを削除
+        $('.task-item').fadeOut(() => {
+            $('.task-item').remove();
+        });
+        
+        // メモリとストレージをクリア
+        activeTasks = {};
+        saveTasksToStorage();
+        updateActiveTaskCount();
+        $('#activeTasks').hide();
+    }
+}
+
+// タスク削除
+function removeTask(taskId) {
+    const task = $(`.task-item[data-task-id="${taskId}"]`);
+    task.fadeOut(() => {
+        task.remove();
+        delete activeTasks[taskId];
+        saveTasksToStorage();
+        updateActiveTaskCount();
+        if (Object.keys(activeTasks).length === 0) {
+            $('#activeTasks').hide();
+        }
+    });
+}
+
+// 生成シミュレーション（非推奨 - monitorActualProgressを使用）
+function simulateGeneration(taskId) {
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 20;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            completeTask(taskId);
+        }
+        updateTaskProgress(taskId, progress);
+    }, 1000);
+}
+
+// 実際の進捗を監視
+function monitorActualProgress(taskId) {
+    console.log('monitorActualProgress called for:', taskId);
+    
+    const taskInfo = activeTasks[taskId];
+    if (!taskInfo) {
+        console.error('Task not found:', taskId);
+        return;
+    }
+    
+    // 記事数に応じて想定時間を調整
+    const articleCount = taskInfo.actualCount || taskInfo.data?.count || 1;
+    const timePerArticle = 45; // 1記事あたり45秒（実際の生成時間に近い値）
+    const totalTime = articleCount * timePerArticle;
+    
+    console.log('Task info:', { articleCount, totalTime });
+    
+    let elapsed = 0;
+    const updateInterval = 500; // 0.5秒ごとに更新
+    
+    // すぐにアニメーションを開始
+    const taskElement = $(`.task-item[data-task-id="${taskId}"]`);
+    if (taskElement.length === 0) {
+        console.error('Task element not found in DOM:', taskId);
+        return;
+    }
+    
+    const progressBar = taskElement.find('.progress-bar');
+    progressBar.addClass('progress-bar-animated');
+    
+    // 初回の進捗更新
+    updateTaskProgress(taskId, 8);
+    taskElement.find('.task-info').text('記事構成を生成中...');
+    
+    const interval = setInterval(() => {
+        elapsed += updateInterval / 1000; // 秒に変換
+        
+        // タスクがまだ存在するか確認
+        if (!activeTasks[taskId]) {
+            clearInterval(interval);
+            return;
+        }
+        
+        // 進捗を計算（最大95%まで）
+        let progress = Math.min((elapsed / totalTime) * 95, 95);
+        
+        // 進捗を更新
+        updateTaskProgress(taskId, progress);
+        
+        // 進捗を保存
+        activeTasks[taskId].progress = progress;
+        saveTasksToStorage();
+        
+        // 想定時間を超えた場合
+        if (elapsed >= totalTime) {
+            // APIが完了していない場合は95%で待機
+            if (!activeTasks[taskId].apiCompleted) {
+                if (progress < 95) {
+                    updateTaskProgress(taskId, 95);
+                    activeTasks[taskId].progress = 95;
+                    saveTasksToStorage();
+                }
+                // APIの完了を待つ（最大5分）
+                if (elapsed > 300) { // 5分経過
+                    clearInterval(interval);
+                    updateTaskProgress(taskId, 100);
+                    setTimeout(() => {
+                        completeTask(taskId);
+                    }, 1000);
+                }
+            } else {
+                // APIが完了している場合は即座に完了
+                clearInterval(interval);
+                updateTaskProgress(taskId, 100);
+                setTimeout(() => {
+                    completeTask(taskId);
+                }, 1000);
+            }
+        }
+    }, updateInterval);
+    
+    // タスクにインターバルIDを保存（クリーンアップ用）
+    if (activeTasks[taskId]) {
+        activeTasks[taskId].intervalId = interval;
+    }
+}
+
+// 進捗更新
+function updateTaskProgress(taskId, progress) {
+    const task = $(`.task-item[data-task-id="${taskId}"]`);
+    task.find('.progress-bar').css('width', `${progress}%`);
+    task.find('.progress-text').text(`${Math.round(progress)}%`);
+    
+    if (progress < 30) {
+        task.find('.task-info').text('記事構成を生成中...');
+    } else if (progress < 70) {
+        task.find('.task-info').text('本文を執筆中...');
+    } else {
+        task.find('.task-info').text('最終調整中...');
+    }
+}
+
+// タスク完了
+function completeTask(taskId) {
+    const taskInfo = activeTasks[taskId];
+    const task = $(`.task-item[data-task-id="${taskId}"]`);
+    
+    // APIエラーがある場合は警告表示
+    if (taskInfo && taskInfo.apiError) {
+        task.find('.task-status').removeClass('bg-info').addClass('bg-warning').text('エラー');
+        task.find('.task-info').text(`エラー: ${taskInfo.apiError}`);
+        task.find('.progress-bar').removeClass('progress-bar-animated').addClass('bg-warning');
+        
+        // エラーでも記事が生成されている可能性があるため、確認メッセージを追加
+        if (taskInfo.apiError.includes('タイムアウト')) {
+            task.find('.task-info').append('<br><small>※記事は生成されている可能性があります</small>');
+        }
+    } else {
+        task.find('.task-status').removeClass('bg-info').addClass('bg-success').text('完了');
+        task.find('.progress-bar').removeClass('progress-bar-animated');
+        
+        // 完了を記録
+        markTaskAsCompleted(taskId, taskInfo?.title);
+    }
+    
+    // タスクのステータスを更新
+    if (activeTasks[taskId]) {
+        activeTasks[taskId].status = 'completed';
+        activeTasks[taskId].progress = 100;
+        saveTasksToStorage();
+    }
+    
+    // 履歴を更新（リロードせずに動的更新）
+    updateArticleHistory();
+    
+    setTimeout(() => {
+        task.fadeOut(() => {
+            task.remove();
+            delete activeTasks[taskId];
+            saveTasksToStorage();
+            updateActiveTaskCount();
+            if (Object.keys(activeTasks).length === 0) {
+                $('#activeTasks').hide();
+            }
+        });
+    }, taskInfo && taskInfo.apiError ? 5000 : 2000); // エラーの場合は長く表示
+}
+
+// 記事履歴を動的に更新
+function updateArticleHistory() {
+    $.ajax({
+        url: '/api/articles/recent',
+        method: 'GET',
+        data: { limit: 50 },
+        success: function(response) {
+            if (response.articles) {
+                // 履歴テーブルを更新
+                const tbody = $('#historyTable');
+                tbody.empty();
+                
+                response.articles.forEach(article => {
+                    const statusClass = article.status === '公開済み' ? 'success' : 
+                                      article.status === '下書き' ? 'secondary' : 'warning';
+                    
+                    // 日時フォーマット（YYYY/MM/DD HH:MM）
+                    const createdDate = new Date(article.created_at);
+                    const formattedDate = createdDate.getFullYear() + '/' + 
+                                        String(createdDate.getMonth() + 1).padStart(2, '0') + '/' +
+                                        String(createdDate.getDate()).padStart(2, '0') + ' ' +
+                                        String(createdDate.getHours()).padStart(2, '0') + ':' +
+                                        String(createdDate.getMinutes()).padStart(2, '0');
+                    
+                    const row = $(`
+                        <tr>
+                            <td>${formattedDate}</td>
+                            <td>${article.site_name}</td>
+                            <td>${article.title}</td>
+                            <td>
+                                <span class="badge bg-${statusClass}">
+                                    ${article.status}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="previewArticle('${article.id}')"
+                                        title="プレビュー">
+                                    <i class="bi bi-eye"></i> 表示
+                                </button>
+                                ${article.status === '下書き' ? `
+                                <button class="btn btn-sm btn-outline-success"
+                                        onclick="publishToWordPress('${article.id}', '${article.site_name}')"
+                                        title="WordPressに投稿">
+                                    <i class="bi bi-wordpress"></i> WP投稿
+                                </button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `);
+                    
+                    tbody.append(row);
+                });
+            }
+        }
+    });
+}
+
+// 記事プレビュー
+function previewArticle(articleId) {
+    $('#previewCard').show();
+    $('#previewContent').html(`
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `);
+    
+    // APIから記事データを取得
+    $.ajax({
+        url: `/api/articles/${articleId}`,
+        method: 'GET',
+        success: function(article) {
+            // Markdownを簡易的にHTMLに変換
+            let content = article.content || '記事の内容がありません';
+            
+            // 見出しの変換
+            content = content.replace(/^### (.*?)$/gm, '<h4>$1</h4>');
+            content = content.replace(/^## (.*?)$/gm, '<h3>$1</h3>');
+            content = content.replace(/^# (.*?)$/gm, '<h2>$1</h2>');
+            
+            // リストの変換
+            content = content.replace(/^- (.*?)$/gm, '<li>$1</li>');
+            content = content.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+            
+            // 改行の変換
+            content = content.replace(/\n\n/g, '</p><p>');
+            content = '<p>' + content + '</p>';
+            
+            // プレビューコンテンツを更新
+            $('#previewContent').html(`
+                <h2>${article.title}</h2>
+                <p class="text-muted">
+                    ${new Date(article.created_at).toLocaleDateString('ja-JP')} | 
+                    ${article.site_name} | 
+                    ${article.tags ? article.tags.join(', ') : ''}
+                </p>
+                <p class="text-info">
+                    文字数: ${article.content ? article.content.length : 0}文字
+                </p>
+                <hr>
+                <div class="article-preview-content">
+                    ${content}
+                </div>
+            `);
+        },
+        error: function() {
+            $('#previewContent').html(`
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> 記事の読み込みに失敗しました
+                </div>
+            `);
+        }
+    });
+}
+
+// プレビューを閉じる
+function closePreview() {
+    $('#previewCard').hide();
+}
+
+// WordPressに投稿
+function publishToWordPress(articleId, siteName) {
+    if (!confirm('この記事をWordPressに投稿しますか？')) {
+        return;
+    }
+    
+    // ボタンを無効化
+    const btn = event.target.closest('button');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 投稿中...';
+    
+    // API呼び出し
+    $.ajax({
+        url: `/api/publish/${articleId}`,
+        method: 'POST',
+        success: function(response) {
+            if (response.success) {
+                alert(`記事が正常に投稿されました！\nURL: ${response.url}`);
+                // ステータスを更新
+                location.reload();
+            } else {
+                alert('投稿に失敗しました: ' + response.error);
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        },
+        error: function(xhr) {
+            alert('投稿エラー: ' + (xhr.responseJSON?.error || 'サーバーエラー'));
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    });
+}
+
+// 記事公開（旧関数）
+function publishArticle(articleId) {
+    if (confirm('この記事を公開しますか？')) {
+        // TODO: 公開処理
+        alert('記事を公開しました');
+    }
+}
+
+// 記事詳細表示
+function viewArticle(articleId) {
+    // 生成された記事から該当記事を探す
+    const articleRow = $(`tr`).filter(function() {
+        return $(this).find('button[onclick*="viewArticle"]').attr('onclick')?.includes(articleId);
+    });
+    
+    if (articleRow.length) {
+        const title = articleRow.find('td:nth-child(3)').text();
+        const content = articleRow.data('content') || '記事内容を読み込み中...';
+        
+        // プレビューカードに表示
+        $('#previewCard').show();
+        $('#previewContent').html(`
+            <h2>${title}</h2>
+            <p class="text-muted">${new Date().toLocaleDateString('ja-JP')}</p>
+            <hr>
+            <div style="white-space: pre-wrap;">${content}</div>
+        `);
+        
+        // 記事データを取得してプレビューを更新
+        $.ajax({
+            url: `/api/articles/${articleId}`,
+            method: 'GET',
+            success: function(article) {
+                $('#previewContent').html(`
+                    <h2>${article.title}</h2>
+                    <p class="text-muted">
+                        ${new Date(article.created_at).toLocaleDateString('ja-JP')} | 
+                        ${article.site_name} | 
+                        ${article.tags ? article.tags.join(', ') : ''}
+                    </p>
+                    <hr>
+                    <div class="article-preview-content" style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; line-height: 1.6;">
+                        ${article.content ? article.content.replace(/\n/g, '<br>').replace(/##/g, '<h3>').replace(/###/g, '<h4>') : '内容がありません'}
+                    </div>
+                `);
+            }
+        });
+    }
+}
+
+// ページロード時にタスク数を更新
+$(document).ready(function() {
+    updateActiveTaskCount();
+    
+    // 100%で止まっているタスクを処理
+    Object.keys(activeTasks).forEach(taskId => {
+        const task = activeTasks[taskId];
+        if (task && task.progress >= 100) {
+            // DOMにタスクが存在する場合
+            const taskElement = $(`.task-item[data-task-id="${taskId}"]`);
+            if (taskElement.length > 0) {
+                // 即座に完了処理
+                console.log(`Completing stuck task: ${taskId}`);
+                updateTaskProgress(taskId, 100);
+                setTimeout(() => {
+                    completeTask(taskId);
+                }, 500);
+            } else {
+                // DOMに存在しない場合は直接削除
+                delete activeTasks[taskId];
+                saveTasksToStorage();
+            }
+        }
+    });
+});
+
+// ページ離脱時の古いタスクをクリーンアップ
+$(window).on('load', function() {
+    const now = new Date();
+    let hasChanges = false;
+    
+    Object.keys(activeTasks).forEach(taskId => {
+        const task = activeTasks[taskId];
+        if (task.startTime) {
+            const startTime = new Date(task.startTime);
+            const minutesPassed = (now - startTime) / (1000 * 60);
+            
+            // 10分以上経過したタスクは完了とみなす
+            if (minutesPassed > 10) {
+                const taskElement = $(`.task-item[data-task-id="${taskId}"]`);
+                if (taskElement.length > 0) {
+                    // 完了処理
+                    updateTaskProgress(taskId, 100);
+                    completeTask(taskId);
+                } else {
+                    // DOMに存在しない場合は削除
+                    delete activeTasks[taskId];
+                    hasChanges = true;
+                }
+            }
+        }
+    });
+    
+    if (hasChanges) {
+        saveTasksToStorage();
+        updateActiveTaskCount();
+    }
+});
+</script>
+{% endblock %}

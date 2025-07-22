@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>WordPress設定確認</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>現在の設定</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>サイトURL:</strong> {{ site_url }}</p>
+                    <p><strong>ユーザー名:</strong> {{ username }}</p>
+                    <p><strong>パスワード:</strong> {{ password_masked }}</p>
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-primary" onclick="testConnection()">接続テスト</button>
+                    <button class="btn btn-secondary" onclick="updatePassword()">パスワード更新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>接続テスト結果</h5>
+        </div>
+        <div class="card-body">
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>WordPress管理画面での確認手順</h5>
+        </div>
+        <div class="card-body">
+            <ol>
+                <li>
+                    <strong>WordPress管理画面にログイン</strong><br>
+                    <a href="{{ site_url }}wp-admin/" target="_blank">{{ site_url }}wp-admin/</a>
+                </li>
+                <li>
+                    <strong>アプリケーションパスワードの確認</strong><br>
+                    ユーザー → あなたのプロフィール → アプリケーションパスワード
+                </li>
+                <li>
+                    <strong>新しいパスワードの作成（必要な場合）</strong><br>
+                    - 「新しいアプリケーションパスワード名」に「jidoutools」と入力<br>
+                    - 「新しいアプリケーションパスワードを追加」をクリック<br>
+                    - 表示されたパスワードをコピー（スペースも含めて正確に）
+                </li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<!-- パスワード更新モーダル -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">アプリケーションパスワード更新</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>WordPressの管理画面で表示されるアプリケーションパスワードを入力してください。</p>
+                <p class="text-muted">例: xxxx xxxx xxxx xxxx xxxx xxxx（スペースも含めて正確に）</p>
+                <input type="text" id="new-password" class="form-control" placeholder="新しいパスワード">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="savePassword()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function testConnection() {
+    const resultsDiv = document.getElementById('test-results');
+    resultsDiv.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>';
+    
+    fetch('/api/wordpress/test-connection')
+        .then(response => response.json())
+        .then(data => {
+            let html = '<h6>テスト結果:</h6>';
+            
+            // API接続
+            html += `<p>REST API: ${data.api_available ? '✅ 有効' : '❌ 無効'}</p>`;
+            
+            // 認証テスト
+            html += `<p>認証: ${data.auth_success ? '✅ 成功' : '❌ 失敗'}</p>`;
+            
+            if (data.error_details) {
+                html += `<div class="alert alert-danger">
+                    <strong>エラー詳細:</strong><br>
+                    ${data.error_details}
+                </div>`;
+            }
+            
+            if (data.auth_success) {
+                html += `<p>ユーザー名: ${data.user_name}</p>`;
+                html += `<p>権限: ${data.capabilities ? data.capabilities.join(', ') : 'N/A'}</p>`;
+            }
+            
+            resultsDiv.innerHTML = html;
+        })
+        .catch(error => {
+            resultsDiv.innerHTML = `<div class="alert alert-danger">エラー: ${error.message}</div>`;
+        });
+}
+
+function updatePassword() {
+    const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+    modal.show();
+}
+
+function savePassword() {
+    const password = document.getElementById('new-password').value;
+    if (!password) {
+        alert('パスワードを入力してください');
+        return;
+    }
+    
+    fetch('/api/wordpress/update-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({password: password})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('パスワードを更新しました');
+            location.reload();
+        } else {
+            alert('エラー: ' + data.error);
+        }
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('passwordModal')).hide();
+}
+
+// ページ読み込み時に自動でテスト
+document.addEventListener('DOMContentLoaded', function() {
+    testConnection();
+});
+</script>
+{% endblock %}

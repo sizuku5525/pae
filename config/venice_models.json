@@ -1,0 +1,93 @@
+{
+  "models": {
+    "llama-3.3-70b": {
+      "name": "Llama 3.3 70B",
+      "description": "Venice AI - 高性能で汎用的なモデル（推奨）",
+      "max_tokens": 65536,
+      "default": true
+    },
+    "llama-3.1-405b": {
+      "name": "Llama 3.1 405B",
+      "description": "Venice AI - 最高精度の大規模モデル",
+      "max_tokens": 65536
+    },
+    "qwen3-235b": {
+      "name": "Qwen 3 235B",
+      "description": "Venice AI - 高性能な中国製AIモデル",
+      "max_tokens": 32768
+    },
+    "mistral-31-24b": {
+      "name": "Mistral 3.1 24B",
+      "description": "Venice AI - 軽量で高速、画像対応",
+      "max_tokens": 131072,
+      "supports_vision": true
+    },
+    "venice-uncensored": {
+      "name": "Venice Uncensored",
+      "description": "Venice AI - 制限の少ないモデル",
+      "max_tokens": 32768
+    },
+    "qwen-2.5-qwq-32b": {
+      "name": "Qwen 2.5 QwQ 32B",
+      "description": "Venice AI - 推論特化モデル",
+      "max_tokens": 32768
+    },
+    "deepseek-r1-671b": {
+      "name": "DeepSeek R1 671B",
+      "description": "Venice AI - 最高レベルの推論能力",
+      "max_tokens": 131072
+    }
+  },
+  "available_providers": {
+    "openai": {
+      "gpt-4.1": {
+        "name": "GPT-4.1 Turbo",
+        "description": "最新のGPT-4.1モデル。最高性能。",
+        "max_tokens": 128000
+      },
+      "gpt-4.1-mini": {
+        "name": "GPT-4.1 Mini",
+        "description": "GPT-4.1の軽量版。高速で効率的。",
+        "max_tokens": 4096
+      },
+      "gpt-4o": {
+        "name": "GPT-4o",
+        "description": "GPT-4o。高品質で多言語対応。",
+        "max_tokens": 128000
+      },
+      "gpt-4o-mini": {
+        "name": "GPT-4o Mini",
+        "description": "GPT-4oの軽量版。コスト効率が良い。",
+        "max_tokens": 4096
+      }
+    },
+    "anthropic": {
+      "claude-opus-4-20250514": {
+        "name": "Claude Opus 4",
+        "description": "最も強力で高性能なモデル。卓越した推論能力。",
+        "max_tokens": 200000,
+        "supports_vision": true
+      },
+      "claude-sonnet-4-20250514": {
+        "name": "Claude Sonnet 4",
+        "description": "優れた推論能力を持つ高性能モデル。",
+        "max_tokens": 200000,
+        "supports_vision": true
+      },
+      "claude-3-5-sonnet-20241022": {
+        "name": "Claude 3.5 Sonnet",
+        "description": "高性能でバランスの取れたモデル。",
+        "max_tokens": 200000,
+        "supports_vision": true
+      }
+    },
+    "google": {
+      "gemini-2.5-pro-preview-06-05": {
+        "name": "Gemini 2.5 Pro",
+        "description": "思考と推論の強化、マルチモーダル理解、高度なコーディング。",
+        "max_tokens": 1048576,
+        "supports_vision": true
+      }
+    }
+  }
+}

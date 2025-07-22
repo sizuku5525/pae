@@ -1,0 +1,623 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-key"></i> APIキー設定
+            </h1>
+            <p class="text-muted">各種APIサービスのキー管理</p>
+        </div>
+    </div>
+
+    <!-- ステータスカード -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted mb-1">画像生成状態</h6>
+                    <h3 class="mb-0">
+                        <span id="generation-status" class="badge bg-secondary">確認中...</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted mb-1">今月の生成数</h6>
+                    <h3 class="mb-0" id="monthly-count">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted mb-1">予算使用率</h6>
+                    <h3 class="mb-0" id="budget-usage">0%</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted mb-1">優先サービス</h6>
+                    <h3 class="mb-0" id="primary-service">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APIキー設定 -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-key"></i> 画像生成APIキー設定</h5>
+        </div>
+        <div class="card-body">
+            <div id="api-key-status" class="mb-3"></div>
+            
+            <!-- Google Gemini -->
+            <div class="mb-4">
+                <h6 class="border-bottom pb-2">
+                    <img src="https://www.gstatic.com/lamda/images/gemini_favicon_f069958c85030456e93de685481c559f160ea06b.png" width="20" class="me-2">
+                    Google Gemini 2.0
+                </h6>
+                <div class="mb-3">
+                    <label class="form-label">APIキー</label>
+                    <div id="gemini-status" class="mb-2"></div>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="gemini-key-input-2025" 
+                               name="gemini-unique-field-2025"
+                               placeholder="新しいAPIキーを入力"
+                               autocomplete="off"
+                               data-lpignore="true"
+                               data-form-type="other">
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleVisibility('gemini-key-input-2025')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-primary" type="button" onclick="saveGeminiKey()">
+                            保存
+                        </button>
+                        <button class="btn btn-danger" type="button" onclick="deleteGeminiKey()" title="APIキーを削除">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">
+                        <a href="https://makersuite.google.com/app/apikey" target="_blank">
+                            APIキーを取得 <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+
+            <!-- OpenAI GPT Image -->
+            <div class="mb-4">
+                <h6 class="border-bottom pb-2">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" width="20" class="me-2">
+                    OpenAI GPT Image
+                </h6>
+                <div class="mb-3">
+                    <label class="form-label">APIキー</label>
+                    <div id="openai-status" class="mb-2"></div>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="openai-key-input-2025" 
+                               name="openai-unique-field-2025"
+                               placeholder="新しいAPIキーを入力"
+                               autocomplete="off"
+                               data-lpignore="true"
+                               data-form-type="other">
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleVisibility('openai-key-input-2025')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-primary" type="button" onclick="saveOpenAIKey()">
+                            保存
+                        </button>
+                        <button class="btn btn-danger" type="button" onclick="deleteOpenAIKey()" title="APIキーを削除">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">
+                        <a href="https://platform.openai.com/api-keys" target="_blank">
+                            APIキーを取得 <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+
+            <!-- Unsplash -->
+            <div class="mb-4">
+                <h6 class="border-bottom pb-2">
+                    <i class="bi bi-camera-fill text-dark"></i>
+                    Unsplash（無料写真）
+                </h6>
+                <div class="mb-3">
+                    <label class="form-label">アクセスキー</label>
+                    <div id="unsplash-status" class="mb-2"></div>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="unsplash-key-input-2025" 
+                               name="unsplash-unique-field-2025"
+                               placeholder="新しいアクセスキーを入力"
+                               autocomplete="off"
+                               data-lpignore="true"
+                               data-form-type="other">
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleVisibility('unsplash-key-input-2025')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-primary" type="button" onclick="saveUnsplashKey()">
+                            保存
+                        </button>
+                        <button class="btn btn-danger" type="button" onclick="deleteUnsplashKey()" title="アクセスキーを削除">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">
+                        <a href="https://unsplash.com/developers" target="_blank">
+                            アクセスキーを取得 <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 生成設定 -->
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-gear"></i> 生成設定</h5>
+        </div>
+        <div class="card-body">
+            <form id="generation-settings-form">
+                <!-- 基本設定 -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="image-generation-enabled" checked>
+                            <label class="form-check-label" for="image-generation-enabled">
+                                画像生成を有効化
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto-selection-mode" checked>
+                            <label class="form-check-label" for="auto-selection-mode">
+                                自動サービス選択
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 優先サービス -->
+                <div class="mb-3">
+                    <label class="form-label">優先サービス</label>
+                    <select class="form-select" id="primary-service-select">
+                        <option value="auto">自動選択</option>
+                        <option value="gemini_image">Google Gemini</option>
+                        <option value="gpt_image">OpenAI GPT Image</option>
+                        <option value="unsplash">Unsplash（無料）</option>
+                    </select>
+                </div>
+
+                <!-- 月間予算 -->
+                <div class="mb-3">
+                    <label class="form-label">月間予算（USD）</label>
+                    <input type="number" class="form-control" id="monthly-budget" 
+                           min="0" max="1000" value="50">
+                    <small class="form-text text-muted">
+                        予算に近づくと自動的に低コストサービスに切り替わります
+                    </small>
+                </div>
+
+                <!-- ジャンル別設定 -->
+                <h6 class="mt-4 mb-3">ジャンル別サービス設定</h6>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">ビジネス記事</label>
+                        <select class="form-select form-select-sm" id="business-service">
+                            <option value="gemini_image">Google Gemini</option>
+                            <option value="gpt_image">OpenAI GPT Image</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">テクノロジー記事</label>
+                        <select class="form-select form-select-sm" id="tech-service">
+                            <option value="gemini_image">Google Gemini</option>
+                            <option value="gpt_image">OpenAI GPT Image</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">ライフスタイル記事</label>
+                        <select class="form-select form-select-sm" id="lifestyle-service">
+                            <option value="gpt_image">OpenAI GPT Image</option>
+                            <option value="gemini_image">Google Gemini</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">クリエイティブ記事</label>
+                        <select class="form-select form-select-sm" id="creative-service">
+                            <option value="gpt_image">OpenAI GPT Image</option>
+                            <option value="gemini_image">Google Gemini</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3">
+                    <i class="bi bi-save"></i> 設定を保存
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 設定の読み込み
+function loadSettings() {
+    // キャッシュを無効化してリクエスト
+    fetch('/api/image-generation/settings?t=' + new Date().getTime(), {
+        cache: 'no-cache'
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log('=== APIレスポンス確認 ===');
+            console.log('Gemini masked:', data.settings.gemini_image?.api_key_masked);
+            console.log('OpenAI masked:', data.settings.gpt_image?.api_key_masked);
+            
+            if (data.success) {
+                const settings = data.settings;
+                
+                // Geminiステータス
+                if (settings.gemini_image?.api_key_masked) {
+                    console.log('Setting Gemini status with:', settings.gemini_image.api_key_masked);
+                    const geminiHtml = `<span class="badge bg-success">
+                        <i class="bi bi-check-circle"></i> 設定済み: ${settings.gemini_image.api_key_masked}
+                    </span>`;
+                    console.log('Gemini HTML:', geminiHtml);
+                    $('#gemini-status').html(geminiHtml);
+                } else {
+                    $('#gemini-status').html(`
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-circle"></i> 未設定
+                        </span>
+                    `);
+                }
+                
+                // OpenAIステータス
+                if (settings.gpt_image?.api_key_masked) {
+                    $('#openai-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み: ${settings.gpt_image.api_key_masked}
+                        </span>
+                    `);
+                } else {
+                    $('#openai-status').html(`
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-circle"></i> 未設定
+                        </span>
+                    `);
+                }
+                
+                // Unsplashステータス
+                if (settings.unsplash?.access_key_masked) {
+                    console.log('Setting Unsplash status with:', settings.unsplash.access_key_masked);
+                    $('#unsplash-status').html(`
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> 設定済み: ${settings.unsplash.access_key_masked}
+                        </span>
+                    `);
+                } else {
+                    $('#unsplash-status').html(`
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-circle"></i> 未設定
+                        </span>
+                    `);
+                }
+                
+                // ステータス更新
+                updateStatus(settings);
+                
+                // デバッグ: 各要素が正しく更新されたか確認
+                console.log('Gemini status element:', $('#gemini-status').html());
+                console.log('OpenAI status element:', $('#openai-status').html());
+                console.log('Unsplash status element:', $('#unsplash-status').html());
+            }
+        })
+        .catch(error => {
+            console.error('設定の読み込みエラー:', error);
+        });
+}
+
+// ステータス更新
+function updateStatus(settings) {
+    // 画像生成状態
+    const status = $('#generation-status');
+    if (settings.enabled) {
+        if (settings.gemini_image?.api_key_masked || settings.gpt_image?.api_key_masked) {
+            status.removeClass('bg-secondary bg-danger').addClass('bg-success').text('有効');
+        } else {
+            status.removeClass('bg-secondary bg-success').addClass('bg-danger').text('APIキー未設定');
+        }
+    } else {
+        status.removeClass('bg-success bg-danger').addClass('bg-secondary').text('無効');
+    }
+    
+    // 優先サービス
+    const serviceNames = {
+        'gemini_image': 'Gemini',
+        'gpt_image': 'GPT Image',
+        'unsplash': 'Unsplash',
+        'auto': '自動選択'
+    };
+    $('#primary-service').text(serviceNames[settings.primary_service] || '-');
+}
+
+// パスワード表示切り替え
+function toggleVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// Gemini APIキー保存
+function saveGeminiKey() {
+    const key = $('#gemini-key-input-2025').val();
+    if (!key) {
+        showAlert('warning', 'APIキーを入力してください');
+        return;
+    }
+    
+    fetch('/api/image-generation/api-keys', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({gemini_api_key: key})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Gemini APIキーを保存しました');
+            // 保存後にステータスを更新
+            $('#gemini-status').html(`
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle"></i> 設定済み: ${key.substring(0, 10)}...
+                </span>
+            `);
+            $('#gemini-key-input-2025').val('');
+            $('#gemini-key-input-2025').attr('placeholder', '新しいAPIキーを入力');
+            // ステータスカードも更新
+            $('#generation-status').removeClass('bg-secondary bg-danger').addClass('bg-success').text('有効');
+        } else {
+            showAlert('danger', 'エラー: ' + data.message);
+        }
+    });
+}
+
+// OpenAI APIキー保存
+function saveOpenAIKey() {
+    const key = $('#openai-key-input-2025').val();
+    if (!key) {
+        showAlert('warning', 'APIキーを入力してください');
+        return;
+    }
+    
+    fetch('/api/image-generation/api-keys', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({openai_api_key: key})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'OpenAI APIキーを保存しました');
+            // 保存後にステータスを更新
+            $('#openai-status').html(`
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle"></i> 設定済み: ${key.substring(0, 10)}...
+                </span>
+            `);
+            $('#openai-key-input-2025').val('');
+            $('#openai-key-input-2025').attr('placeholder', '新しいAPIキーを入力');
+            // ステータスカードも更新
+            $('#generation-status').removeClass('bg-secondary bg-danger').addClass('bg-success').text('有効');
+        } else {
+            showAlert('danger', 'エラー: ' + data.message);
+        }
+    });
+}
+
+// Unsplash アクセスキー保存
+function saveUnsplashKey() {
+    const key = $('#unsplash-key-input-2025').val();
+    if (!key) {
+        showAlert('warning', 'アクセスキーを入力してください');
+        return;
+    }
+    
+    fetch('/api/image-generation/api-keys', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({unsplash_access_key: key})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Unsplash アクセスキーを保存しました');
+            // 保存後にステータスを更新
+            $('#unsplash-status').html(`
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle"></i> 設定済み: ${key.substring(0, 10)}...
+                </span>
+            `);
+            $('#unsplash-key-input-2025').val('');
+            $('#unsplash-key-input-2025').attr('placeholder', '新しいアクセスキーを入力');
+        } else {
+            showAlert('danger', 'エラー: ' + data.message);
+        }
+    });
+}
+
+// Gemini APIキー削除
+function deleteGeminiKey() {
+    if (confirm('Gemini APIキーを削除してもよろしいですか？')) {
+        fetch('/api/image-generation/api-keys', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({gemini_api_key: ''})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', 'Gemini APIキーを削除しました');
+                $('#gemini-status').html(`
+                    <span class="badge bg-warning">
+                        <i class="bi bi-exclamation-circle"></i> 未設定
+                    </span>
+                `);
+                $('#generation-status').removeClass('bg-success').addClass('bg-danger').text('APIキー未設定');
+            }
+        });
+    }
+}
+
+// OpenAI APIキー削除
+function deleteOpenAIKey() {
+    if (confirm('OpenAI APIキーを削除してもよろしいですか？')) {
+        fetch('/api/image-generation/api-keys', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({openai_api_key: ''})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', 'OpenAI APIキーを削除しました');
+                $('#openai-status').html(`
+                    <span class="badge bg-warning">
+                        <i class="bi bi-exclamation-circle"></i> 未設定
+                    </span>
+                `);
+            }
+        });
+    }
+}
+
+// Unsplash アクセスキー削除
+function deleteUnsplashKey() {
+    if (confirm('Unsplash アクセスキーを削除してもよろしいですか？')) {
+        fetch('/api/image-generation/api-keys', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({unsplash_access_key: ''})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', 'Unsplash アクセスキーを削除しました');
+                $('#unsplash-status').html(`
+                    <span class="badge bg-warning">
+                        <i class="bi bi-exclamation-circle"></i> 未設定
+                    </span>
+                `);
+            }
+        });
+    }
+}
+
+// アラート表示
+function showAlert(type, message) {
+    const alert = $(`
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `);
+    $('#api-key-status').html(alert);
+}
+
+// 生成設定保存
+$('#generation-settings-form').on('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        enabled: $('#image-generation-enabled').is(':checked'),
+        auto_selection_mode: $('#auto-selection-mode').is(':checked'),
+        primary_service: $('#primary-service-select').val(),
+        monthly_budget: parseInt($('#monthly-budget').val()),
+        auto_selection_rules: {
+            business_articles: $('#business-service').val(),
+            tech_articles: $('#tech-service').val(),
+            lifestyle_articles: $('#lifestyle-service').val(),
+            creative_articles: $('#creative-service').val()
+        }
+    };
+    
+    fetch('/api/image-generation/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', '設定を保存しました');
+        } else {
+            showAlert('danger', 'エラー: ' + data.message);
+        }
+    });
+});
+
+// グローバル変数として現在の設定を保持
+let currentSettings = {};
+
+// 初期化
+$(document).ready(function() {
+    console.log('ページ読み込み開始');
+    
+    // 即座に設定を読み込む
+    loadSettings();
+    loadGenerationSettings();
+    
+    // ブラウザの自動入力をクリア（少し遅延）
+    setTimeout(() => {
+        $('#gemini-key-input-2025').val('');
+        $('#openai-key-input-2025').val('');
+        $('#unsplash-key-input-2025').val('');
+        console.log('入力フィールドをクリア');
+    }, 300);
+});
+
+// 設定の初回読み込み
+function loadGenerationSettings() {
+    fetch('/api/image-generation/settings?t=' + new Date().getTime(), {
+        cache: 'no-cache'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentSettings = data.settings;
+            
+            // 設定値を画面に反映
+            $('#image-generation-enabled').prop('checked', currentSettings.enabled);
+            $('#auto-selection-mode').prop('checked', currentSettings.auto_selection_mode);
+            $('#primary-service-select').val(currentSettings.primary_service || 'auto');
+            $('#monthly-budget').val(currentSettings.monthly_budget || 50);
+            
+            // ジャンル別設定
+            $('#business-service').val(currentSettings.auto_selection_rules?.business_articles || 'gemini_image');
+            $('#tech-service').val(currentSettings.auto_selection_rules?.tech_articles || 'gemini_image');
+            $('#lifestyle-service').val(currentSettings.auto_selection_rules?.lifestyle_articles || 'gpt_image');
+            $('#creative-service').val(currentSettings.auto_selection_rules?.creative_articles || 'gpt_image');
+        }
+    });
+}
+</script>
+{% endblock %}
