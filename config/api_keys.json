@@ -1,4 +1,7 @@
 {
+  "openai": {
+    "api_key": "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"
+  },
   "claude": {
     "api_key": "",
     "model": "claude-sonnet-4-20250514"
