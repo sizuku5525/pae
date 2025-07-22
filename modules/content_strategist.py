@@ -1,5 +1,5 @@
 """
-AIコンテンツストラテジスト
+AIコンテンツストラテジスト（GPT版）
 過去記事を分析して次の記事テーマを自動決定
 """
 import json
@@ -8,16 +8,16 @@ from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
 import re
 from collections import Counter
+import openai
 
 logger = logging.getLogger(__name__)
 
 
-class ContentStrategist:
-    """AIが過去記事を分析して戦略的に次の記事を決定"""
+class ContentStrategistGPT:
+    """AIが過去記事を分析して戦略的に次の記事を決定（GPT版）"""
     
-    def __init__(self, claude_client):
-        self.claude_client = claude_client
-        self.model = "claude-sonnet-4-20250514"
+    def __init__(self):
+        self.model = "gpt-4-1106-preview"
         
     def analyze_published_articles(self, site_id: str) -> Dict:
         """
@@ -33,8 +33,7 @@ class ContentStrategist:
             return {
                 'total_articles': 0,
                 'topics_covered': [],
-                'keyword_frequency': {},
-                'performance_insights': {}
+                'keyword_frequency': {}
             }
         
         # サイトの記事をフィルタリング
@@ -143,7 +142,7 @@ class ContentStrategist:
         """
         # プロンプトを構築
         prompt = f"""
-あなたは{site_info.get('name')}のコンテンツストラテジストです。
+あなたは{site_info.get('name')}のSEOコンテンツストラテジストです。
 過去の記事を分析し、次に書くべき記事テーマを戦略的に提案してください。
 
 【サイト情報】
@@ -195,7 +194,7 @@ class ContentStrategist:
         
         try:
             # Claude APIで分析
-            response = self.claude_client.messages.create(
+            response = openai.ChatCompletion.create(
                 model=self.model,
                 max_tokens=4000,
                 temperature=0.7,
@@ -207,7 +206,7 @@ class ContentStrategist:
                 ]
             )
             
-            content = response.content[0].text
+            content = response.choices[0].message.content
             
             # 提案を解析
             suggestions = self._parse_suggestions(content)
