@@ -1,13 +1,13 @@
 """
 記事生成エンジン
-Claude APIを使用してサイトの特性に合わせた記事を自動生成
+GPT APIを使用してサイトの特性に合わせた記事を自動生成
 """
 import os
 import json
 import re
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
-from anthropic import Anthropic
+from typing import Dict, List, Optional
+import openai
 import logging
 
 # ロギング設定
@@ -15,51 +15,34 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class ArticleGenerator:
-    """記事生成クラス"""
+class ArticleGeneratorGPT:
+    """記事生成クラス（GPT版）"""
     
     def __init__(self, api_key: Optional[str] = None):
         """
         初期化
         
         Args:
-            api_key: Claude APIキー
+            api_key: OpenAI  APIキー
         """
         # APIキーの取得優先順位: 引数 > 環境変数 > config/api_keys.json
-        self.api_key = api_key
-        
-        if not self.api_key:
-            self.api_key = os.getenv('CLAUDE_API_KEY')
+        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
             
         if not self.api_key:
             try:
                 with open('config/api_keys.json', 'r') as f:
                     api_config = json.load(f)
-                    self.api_key = api_config.get('claude', {}).get('api_key', '')
+                    self.api_key = api_config.get('openai', {}).get('api_key', '')
             except:
                 pass
                 
         if not self.api_key:
             raise ValueError("Claude APIキーが設定されていません")
         
-        self.client = Anthropic(api_key=self.api_key)
+        openai.api_key = self.api_key
         
         # API設定から現在のモデルを読み込む
-        try:
-            with open('config/api_keys.json', 'r') as f:
-                api_config = json.load(f)
-                self.model = api_config.get('claude', {}).get('model', 'claude-sonnet-4-20250514')
-        except:
-            self.model = "claude-sonnet-4-20250514"  # デフォルトはClaude 4 Sonnet
-        
-        # 記事タイプ別のテンプレート
-        self.templates = {
-            'howto': self._get_howto_template(),
-            'list': self._get_list_template(),
-            'review': self._get_review_template(),
-            'news': self._get_news_template(),
-            'column': self._get_column_template()
-        }
+        self.model = "gpt-4-1106-preview"
     
     def generate_article(self, 
                         site_info: Dict,
@@ -88,17 +71,18 @@ class ArticleGenerator:
             
             # プロンプトを構築
             prompt = self._build_prompt(site_info, article_type, keywords, length, tone, affiliate_products)
-            
-            # Claude APIで生成（拡張機能を使用）
-            logger.info(f"記事生成開始: {site_info.get('name', 'Unknown')} - モデル: {self.model}")
-            
-            # サーチとthink機能を含む詳細なプロンプト
-            enhanced_prompt = f"""
-<thinking>
-このサイトの目的と方針を理解し、読者に価値を提供する{length}文字程度の詳細な記事を作成します。
-検索機能を使用して最新の情報を収集し、深い洞察を含んだ内容にします。
-</thinking>
+            logger.info(f"記事生成開始: {site_info.get('name', 'Unknown')} - モデル: {self.model}")            
 
+        # GPT向けにenhanced_promptを組み立てる
+        enhanced_prompt = f"""
+あなたはこのサイトの専門ライターかつコンテンツストラテジストです。
+記事の目的と読者を深く理解し、SEOや最新のトレンド、過去の記事との重複回避も考慮しながら、
+読者が実際に行動しやすいよう具体例・データ・洞察を含む、高品質で詳細な記事を執筆してください。
+
+記事の長さはおおむね{length}文字を目安にします。
+各セクションは十分な情報量があり、専門的でありながら読みやすい日本語で書いてください。
+
+以下が執筆条件です：
 {prompt}
 
 {site_info.get('variation_prompt', '')}
@@ -108,82 +92,32 @@ class ArticleGenerator:
 2. 各セクションを詳細に展開し、具体例や実践的なアドバイスを含めてください
 3. 読者が実際に行動できる具体的な情報を提供してください
 4. 専門的な内容も分かりやすく解説してください
-5. 最新のトレンドや統計データがあれば含めてください
+5. 可能なら最新のトレンドや統計データに触れてください
 """
-            
-            # Claude 4の場合は新しいAPIパラメータを使用
-            if 'claude-4' in self.model or 'claude-sonnet-4' in self.model:
-                # ストリーミングを使用して長い処理に対応
-                stream = self.client.beta.messages.create(
-                    model=self.model,
-                    max_tokens=30000,  # thinking.budget_tokensより大きく設定
-                    temperature=1,  # thinkingが有効な場合は1必須
-                    stream=True,  # ストリーミングを有効化
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": enhanced_prompt
-                        }
-                    ],
-                    tools=[
-                        {
-                            "name": "web_search",
-                            "type": "web_search_20250305"
-                        }
-                    ],
-                    thinking={
-                        "type": "enabled",
-                        "budget_tokens": 20000  # max_tokensより小さく設定
-                    },
-                    betas=["web-search-2025-03-05"]
-                )
-                
-                # ストリーミングレスポンスを結合
-                full_content = ""
-                try:
-                    for event in stream:
-                        if hasattr(event, 'type'):
-                            if event.type == 'content_block_delta':
-                                if hasattr(event, 'delta') and hasattr(event.delta, 'text'):
-                                    full_content += event.delta.text
-                            elif event.type == 'message_delta':
-                                continue
-                            elif event.type == 'message_stop':
-                                break
-                except Exception as e:
-                    logger.error(f"ストリーミングエラー: {str(e)}")
-                    raise
-                
-                # レスポンスオブジェクトを作成
-                class MockResponse:
-                    def __init__(self, text):
-                        self.content = [type('obj', (object,), {'text': text})]
-                
-                response = MockResponse(full_content)
-            else:
-                # Claude 3.xの場合は従来のAPI
-                response = self.client.messages.create(
-                    model=self.model,
-                    max_tokens=8000,  # 7000文字に対応するため増量
-                    temperature=0.7,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": enhanced_prompt
-                        }
-                    ]
-                )
+
+        # OpenAI GPTで生成
+            response = openai.ChatCompletion.create(
+                model=self.model,
+                temperature=0.7,
+                max_tokens=30000,
+                messages=[
+                    {
+                    "role": "user",
+                    "content": enhanced_prompt
+                    }
+                ]
+            )
             
             # レスポンスを解析
-            content = response.content[0].text
+            content = response.choices[0].message.content
             article = self._parse_response(content)
             
             # メタデータを追加
             article['metadata'] = {
                 'generated_at': datetime.now().isoformat(),
                 'site_id': site_info.get('site_id'),
-                'article_type': article_type,
                 'keywords': keywords,
+                'article_type': article_type,
                 'length': len(article.get('content', '')),
                 'model': self.model
             }
@@ -195,9 +129,7 @@ class ArticleGenerator:
             logger.error(f"記事生成エラー: {str(e)}")
             raise
     
-    def _build_prompt(self, site_info: Dict, article_type: str, 
-                      keywords: Optional[List[str]], length: int, tone: str,
-                      affiliate_products: Optional[List[Dict]] = None) -> str:
+        def _build_prompt(self, site_info, article_type, keywords, length, tone, affiliate_products):
         """プロンプトを構築"""
         
         # 基本情報
