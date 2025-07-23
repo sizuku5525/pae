@@ -206,7 +206,7 @@ class ContentStrategistGPT:
                 ]
             )
             
-            content = response.choices[0].message.content
+            content = response.choices[0].message["content"]
             
             # 提案を解析
             suggestions = self._parse_suggestions(content)
