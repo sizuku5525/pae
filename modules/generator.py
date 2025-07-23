@@ -37,13 +37,20 @@ class ArticleGeneratorGPT:
                 pass
                 
         if not self.api_key:
-            raise ValueError("Claude APIキーが設定されていません")
+            raise ValueError("OpenAI APIキーが設定されていません")
         
         openai.api_key = self.api_key
         
         # API設定から現在のモデルを読み込む
         self.model = "gpt-4-1106-preview"
-    
+
+    self.templates = {
+            'howto': self._get_howto_template(),
+            'list': self._get_list_template(),
+            'review': self._get_review_template(),
+            'news': self._get_news_template(),
+            'column': self._get_column_template()
+        }
     def generate_article(self, 
                         site_info: Dict,
                         article_type: str = 'auto',
@@ -73,8 +80,8 @@ class ArticleGeneratorGPT:
             prompt = self._build_prompt(site_info, article_type, keywords, length, tone, affiliate_products)
             logger.info(f"記事生成開始: {site_info.get('name', 'Unknown')} - モデル: {self.model}")            
 
-        # GPT向けにenhanced_promptを組み立てる
-        enhanced_prompt = f"""
+            # GPT向けにenhanced_promptを組み立てる
+            enhanced_prompt = f""" ... """
 あなたはこのサイトの専門ライターかつコンテンツストラテジストです。
 記事の目的と読者を深く理解し、SEOや最新のトレンド、過去の記事との重複回避も考慮しながら、
 読者が実際に行動しやすいよう具体例・データ・洞察を含む、高品質で詳細な記事を執筆してください。
@@ -109,7 +116,10 @@ class ArticleGeneratorGPT:
             )
             
             # レスポンスを解析
-            content = response.choices[0].message.content
+            choices = response.get("choices")
+            if not choices or not choices[0].get("message", {}).get("content"):
+                raise ValueError("APIレスポンスが不正です")
+            content = choices[0]["message"]["content"]
             article = self._parse_response(content)
             
             # メタデータを追加
@@ -434,7 +444,10 @@ SEOを意識し、クリックされやすいタイトルにしてください�
             )
             
             # タイトルを抽出
-            content = response.choices[0].message.content
+            choices = response.get("choices")
+            if not choices or not choices[0].get("message", {}).get("content"):
+                raise ValueError("APIレスポンスが不正です")
+            content = choices[0]["message"]["content"]
             titles = re.findall(r'\d+\.\s*(.+)', content)
             return titles[:count]
             
