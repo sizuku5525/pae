@@ -33,8 +33,8 @@ class ArticleGeneratorGPT:
                 with open('config/api_keys.json', 'r') as f:
                     api_config = json.load(f)
                     self.api_key = api_config.get('openai', {}).get('api_key', '')
-            except:
-                pass
+            except FileNotFoundError:
+                logger.warning("APIキー設定ファイルが見つかりませんでした")
                 
         if not self.api_key:
             raise ValueError("OpenAI APIキーが設定されていません")
@@ -44,7 +44,7 @@ class ArticleGeneratorGPT:
         # API設定から現在のモデルを読み込む
         self.model = "gpt-4-1106-preview"
 
-    self.templates = {
+        self.templates = {
             'howto': self._get_howto_template(),
             'list': self._get_list_template(),
             'review': self._get_review_template(),
@@ -81,7 +81,7 @@ class ArticleGeneratorGPT:
             logger.info(f"記事生成開始: {site_info.get('name', 'Unknown')} - モデル: {self.model}")            
 
             # GPT向けにenhanced_promptを組み立てる
-            enhanced_prompt = f""" ... """
+            enhanced_prompt = f"""
 あなたはこのサイトの専門ライターかつコンテンツストラテジストです。
 記事の目的と読者を深く理解し、SEOや最新のトレンド、過去の記事との重複回避も考慮しながら、
 読者が実際に行動しやすいよう具体例・データ・洞察を含む、高品質で詳細な記事を執筆してください。
@@ -106,7 +106,7 @@ class ArticleGeneratorGPT:
             response = openai.ChatCompletion.create(
                 model=self.model,
                 temperature=0.7,
-                max_tokens=30000,
+                max_tokens=16000,
                 messages=[
                     {
                     "role": "user",
@@ -139,7 +139,7 @@ class ArticleGeneratorGPT:
             logger.error(f"記事生成エラー: {str(e)}")
             raise
     
-        def _build_prompt(self, site_info, article_type, keywords, length, tone, affiliate_products):
+    def _build_prompt(self, site_info, article_type, keywords, length, tone, affiliate_products):
         """プロンプトを構築"""
         
         # 基本情報
