@@ -426,7 +426,7 @@ SEOを意識し、クリックされやすいタイトルにしてください�
 """
         
         try:
-            response = self.client.messages.create(
+            response = openai.ChatCompletion.create(
                 model=self.model,
                 max_tokens=500,
                 temperature=0.8,
@@ -434,7 +434,7 @@ SEOを意識し、クリックされやすいタイトルにしてください�
             )
             
             # タイトルを抽出
-            content = response.content[0].text
+            content = response.choices[0].message.content
             titles = re.findall(r'\d+\.\s*(.+)', content)
             return titles[:count]
             
